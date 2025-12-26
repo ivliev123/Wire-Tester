@@ -13,7 +13,7 @@ from PyQt5.QtCore import Qt
 import serial
 import serial.tools.list_ports
 
-from Icon_modul import icon
+from IconModul import icon
 
 
 class SerialManager:

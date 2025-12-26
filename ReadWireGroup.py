@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QPixmap, QColor, QIcon, QFont
 from PyQt5.QtCore import Qt, pyqtSignal
 
-from Icon_modul import icon
+from IconModul import icon
 
 
 class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow

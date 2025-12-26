@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 import csv
 import os
 
-from Icon_modul import icon
+from IconModul import icon
 
 
 class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
