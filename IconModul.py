@@ -17,9 +17,8 @@ class icon(QWidget):
 
         self.clipboard_icon = QIcon('icons/clipboard.png')
 
-        self.alert_icon = QIcon('icons/alert.png')
 
-        self.alert_icon = QIcon('icons/alert.png')
+
 
         self.up_icon = QIcon('icons/up.png')
         self.down_icon = QIcon('icons/down.png')
@@ -34,6 +33,13 @@ class icon(QWidget):
         self.open_folder_icon = QIcon('icons/open-folder.png')
         self.save_icon = QIcon('icons/save.png')
         self.usb_icon = QIcon('icons/usb.png')
+
+
+
+        self.alert_icon = QIcon('icons/alert.png')
+        self.check_mark_icon = QIcon('icons/check-mark.png')
+        self.error_icon = QIcon('icons/error.png')
+
         
 
         

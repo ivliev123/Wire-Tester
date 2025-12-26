@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import (
     QGridLayout, QGroupBox, QPushButton,
     QVBoxLayout, QLabel, QComboBox, QTableWidgetItem
 )
+from PyQt5.QtGui import QIcon, QPixmap
 
 from PyQt5.QtCore import Qt
 
@@ -149,6 +150,9 @@ class MainWindow(QMainWindow):
     def test_test(self):
         self.read_bit_rows = self.read_file()
         self.read_visual(self.read_bit_rows)
+
+        self.test_wire_group.update_data_to_test = 1
+        self.test_wire_group.to_update_data_to_test()
 
 
 

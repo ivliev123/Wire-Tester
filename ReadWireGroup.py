@@ -81,22 +81,4 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
         wires_layout.addWidget(buttons_group)
         wires_group.setLayout(wires_layout)
         
-
-
-
-
-        # # 2. Группа с детальной информацией (нижняя часть)
-        # details_group = QGroupBox("Детальная информация")
-        # details_layout = QGridLayout()      
-
-        
-        # details_group.setLayout(details_layout)
-        
-        # Добавляем обе группы в основной layout
         main_layout.addWidget(wires_group)
-        # main_layout.addWidget(details_group)
-        
-        # Инициализация состояния
-        # self.clear_details()
-        # self.update_buttons_state()
-    

@@ -31,7 +31,15 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
 
         self.wire_data_from_file = []
 
+        # 
+        self.update_data_to_test = 0
+        self.update_data_to_test_text = ""
+
         self.init_ui()
+
+        # тут обновить статус
+        self.to_update_data_to_test()
+
     
     def init_ui(self):
         # Основной layout
@@ -70,9 +78,31 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.check_button.setIcon(self.icon.search_icon)
         self.check_button.clicked.connect(self.do_check)
 
-        buttons_layout.addWidget(self.line_edit_file, 0, 0, 1, 1)
-        buttons_layout.addWidget(self.open_button,    0, 1, 1, 1)
+
+        self.test_status_label = QLabel("")
+        
+
+        border_radius = 14
+        btn_color_secondary = "6C757D"
+        btn_color_success = "28A745"
+        btn_color_warning = "FFC107"
+        btn_color_danger  = "DC3545"
+
+        # тут иконку состояния в виде кнопки 
+        self.test_status_button = QPushButton("")
+        # self.test_status_button.setMinimumSize(30, 30)
+        self.test_status_button.setFixedSize(28, 28)
+        # self.test_status_button.setIcon(QIcon())
+        self.test_status_button.setStyleSheet(f"background-color: #{btn_color_secondary}; border-radius: {border_radius}px;")        
+
+
+        buttons_layout.addWidget(self.line_edit_file,  0, 0, 1, 1)
+        buttons_layout.addWidget(self.open_button,     0, 1, 1, 1)
         buttons_layout.addWidget(self.check_button,    1, 0, 1, 2)
+
+        buttons_layout.addWidget(self.test_status_label,     2, 0, 1, 1)
+        buttons_layout.addWidget(self.test_status_button,    2, 1, 1, 1, alignment=Qt.AlignRight)
+
 
 
         spacerItem = QSpacerItem(20, 40, QSizePolicy.Maximum, QSizePolicy.Expanding)
@@ -80,22 +110,38 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         # buttons_layout.setContentsMargins(0, 0, 0, 0)
 
 
-
         wires_layout.addWidget(self.wires_table)
         wires_layout.addWidget(buttons_group)
         wires_group.setLayout(wires_layout)
-        
-        
-        # details_group.setLayout(details_layout)
-        
-        # Добавляем обе группы в основной layout
+
+
         main_layout.addWidget(wires_group)
-        # main_layout.addWidget(details_group)
-        
-        # Инициализация состояния
-        # self.clear_details()
-        # self.update_buttons_state()
+
     
+
+    def to_update_data_to_test(self):
+
+        border_radius = 14
+        btn_color_secondary = "6C757D"
+        btn_color_success = "28A745"
+        btn_color_warning = "FFC107"
+        btn_color_danger  = "DC3545"
+
+        if self.update_data_to_test == 0:
+            self.update_data_to_test_text = "Данные прозвонки не загружены"
+            self.test_status_button.setIcon(QIcon(self.icon.error_icon))
+            color = btn_color_secondary
+        if self.update_data_to_test == 1:
+            self.update_data_to_test_text = "Данные прозвонки обновлены"
+            self.test_status_button.setIcon(QIcon(self.icon.check_mark_icon))
+            color = btn_color_success
+        if self.update_data_to_test == 2:
+            self.update_data_to_test_text = "Данные прозвонки необходимо обновить"
+            self.test_status_button.setIcon(QIcon(self.icon.alert_icon))
+            color = btn_color_warning
+
+        self.test_status_label.setText(self.update_data_to_test_text)
+        self.test_status_button.setStyleSheet(f"background-color: #{color}; border-radius: {border_radius}px;")        
 
 
 
@@ -142,15 +188,6 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
             self.wires_table.setRowCount(0)
 
             # Загружаем данные в таблицу
-
-            # self.wires_table.setRowCount(len(data_rows))
-
-            # for row_idx, row_data in enumerate(data_rows):
-            #     for col_idx, value in enumerate(row_data):
-            #         item = QTableWidgetItem(value)
-            #         self.wires_table.setItem(row_idx, col_idx, item)
-
-            # Обновляем имя файла
             self.line_edit_file.setText(os.path.basename(file_path))
 
             QMessageBox.information(
@@ -161,6 +198,8 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
 
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", str(e))
+
+
 
 
     def do_check(self):
