@@ -2,7 +2,7 @@ import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget,
     QGridLayout, QGroupBox, QPushButton,
-    QVBoxLayout, QLabel, QComboBox, QTableWidgetItem
+    QVBoxLayout, QLabel, QComboBox, QTableWidgetItem, QLineEdit
 )
 from PyQt5.QtGui import QIcon, QPixmap
 
@@ -21,7 +21,13 @@ import serial.tools.list_ports
 
 from IconModul import icon
 
+import configparser
 
+
+
+# COMMAND = "t05"
+COMMAND = "t01" 
+t_comand = 1
 
 
 def bytes_to_hex(data, cols=16):
@@ -49,7 +55,8 @@ class SerialManager:
         """Получить список доступных портов"""
         return [port.device for port in serial.tools.list_ports.comports()]
 
-    def connect(self, port: str, baudrate: int = 2000000):
+    # def connect(self, port: str, baudrate: int = 2000000):
+    def connect(self, port: str, baudrate: int = 115200):
         """Подключение к устройству"""
         self.serial = serial.Serial(
             port=port,
@@ -89,6 +96,21 @@ class MainWindow(QMainWindow):
         
         self.icon = icon()
 
+        # Команда / количество плат
+        comand_box = QGroupBox("Команда / количество плате")
+        comand_layout = QGridLayout()
+
+        self.comand_setup_line_edit = QLineEdit()
+        self.comand_setup_button = QPushButton("Задать")
+        self.comand_setup_button.clicked.connect(self.set_command)
+
+        
+        
+        comand_layout.addWidget(self.comand_setup_line_edit, 0, 0)
+        comand_layout.addWidget(self.comand_setup_button, 0, 1)
+
+
+
         # SERIAL
         self.serial_manager = SerialManager()
         # ===== Панель подключения =====
@@ -107,12 +129,16 @@ class MainWindow(QMainWindow):
         conn_layout.addWidget(self.connect_button, 0, 3)
 
 
+
+        comand_box.setLayout(comand_layout)
+        main_layout.addWidget(comand_box, 0, 0, 1, 1)
+
         connection_box.setLayout(conn_layout)
-        main_layout.addWidget(connection_box, 0, 0, 1, 3)
+        main_layout.addWidget(connection_box, 0, 1, 1, 3)
+
+
 
         # от разделения выхлопа особо небыло ...
-
-
 
         # Создаем и добавляем наш виджет
         self.read_wire_group = ReadWireGroup()
@@ -140,6 +166,8 @@ class MainWindow(QMainWindow):
         # обработка событий нажатия ячейки         
         # Изменение текущей ячейки
         # self.edit_wire_group.wires_table.currentItemChanged.connect(self.on_current_item_changed)
+
+        self.load_command_from_ini()
 
 
     def do_read_wire(self):
@@ -172,14 +200,18 @@ class MainWindow(QMainWindow):
             intersections = [i for i in zero_indexes if i != row_index]
             intersections_array.append(intersections)
     
-
-
-
-
     def to_edit_wire(self):
         self.edit_wire_group.read_bit_rows =  self.read_bit_rows
         # self.edit_visual(self.edit_wire_group.read_bit_rows)
-        self.edit_wire_group.edit_visual(self.edit_wire_group.read_bit_rows)
+        # self.edit_wire_group.edit_visual(self.edit_wire_group.read_bit_rows)
+        
+        # self.edit_wire_group.wires_table.blockSignals(True)
+        
+        self.edit_wire_group.edit_visual(self.read_bit_rows)
+
+        # self.edit_wire_group.wires_table.blockSignals(False)
+
+        # self.read_visual(self.read_bit_rows)
 
 
 
@@ -200,7 +232,6 @@ class MainWindow(QMainWindow):
             # 1. зеркалим строку
             mirrored = row[::-1]
             zero_indexes = [i for i, bit in enumerate(mirrored) if bit == 0]
-
             intersections = [i for i in zero_indexes if i != row_index]
             # print(intersections)
             intersections_array.append(intersections)
@@ -228,7 +259,6 @@ class MainWindow(QMainWindow):
     # кривое косое чтение но работает
     def read_wire_write_file(self):
         ser = self.serial_manager.serial 
-        COMMAND = "t01" 
 
         # Создаем папку для данных
         if not os.path.exists("arduino_bin_data"):
@@ -268,15 +298,39 @@ class MainWindow(QMainWindow):
             
             # Также сохраняем текстовую версию (опционально)
             txt_filename = f"arduino_bin_data/response_.txt"
-            with open(txt_filename, 'w', encoding='utf-8') as f:
+            # with open(txt_filename, 'w', encoding='utf-8') as f:
 
-                # Пробуем декодировать как текст
-                try:
-                    f.write(bytes_to_bin(all_response_bytes))
+            #     # Пробуем декодировать как текст
+            #     try:
+            #         f.write(bytes_to_bin(all_response_bytes))
                     
-                except:
-                    f.write("(бинарные данные, не удалось декодировать как текст)")
-            
+            #     except:
+            #         f.write("(бинарные данные, не удалось декодировать как текст)")
+            with open(txt_filename, 'w', encoding='utf-8') as f:
+                try:
+                    # все биты одной строкой
+                    bits = ''.join(f'{b:08b}' for b in all_response_bytes)
+
+                    bits_per_line = 32 * t_comand
+
+                    count_i = 0
+                    for i in range(0, len(bits), bits_per_line):
+                        count_i = count_i + 1
+                        if count_i < 10:
+                            count_i_str = "00" + str(count_i)
+                        if count_i >= 10 and count_i < 100:
+                            count_i_str = "0" + str(count_i)
+                        if count_i >= 100 and count_i < 1000:
+                            count_i_str = str(count_i)
+                        
+                        line = bits[i:i + bits_per_line]
+                        
+                        f.write(count_i_str + ": " +  line + '\n')
+
+                except Exception as e:
+                    f.write(f"(ошибка преобразования в биты: {e})")
+
+                    
             print(f"Текстовая версия: {txt_filename}")
     
 
@@ -300,8 +354,8 @@ class MainWindow(QMainWindow):
 
         print(f"Всего байт: {len(byte_array)}")
 
-        t_comand = 1
         byte_per_row = t_comand * 4
+        print(t_comand)
 
         # 1. Создаем двухмерный массив с строками по byte_per_row байт
         rows = []
@@ -326,12 +380,6 @@ class MainWindow(QMainWindow):
         return bit_rows
 
 
-
-
-
-
-
-
     def update_ports(self):
         self.port_combo.clear()
         ports = self.serial_manager.list_ports()
@@ -348,6 +396,64 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(f"Ошибка подключения: {e}")
 
         time.sleep(2)
+
+
+
+
+    def load_command_from_ini(self):
+        global COMMAND, t_comand
+
+        config = configparser.ConfigParser()
+
+        if not os.path.exists("settings.ini"):
+            # если ini нет — создаем с дефолтными значениями
+            config["COMMAND"] = {
+                "command": COMMAND,
+                "t_comand": str(t_comand)
+            }
+            with open("settings.ini", "w") as f:
+                config.write(f)
+            return
+
+        config.read("settings.ini")
+
+        COMMAND = config.get("COMMAND", "command", fallback="t01")
+        t_comand = config.getint("COMMAND", "t_comand", fallback=1)
+
+        # показываем в поле ввода
+        self.comand_setup_line_edit.setText(str(t_comand))
+
+
+    def save_command_to_ini(self):
+        global COMMAND, t_comand
+
+        config = configparser.ConfigParser()
+        config["COMMAND"] = {
+            "command": COMMAND,
+            "t_comand": str(t_comand)
+        }
+
+        with open("settings.ini", "w") as f:
+            config.write(f)
+
+
+    def set_command(self):
+        global COMMAND, t_comand
+
+        text = self.comand_setup_line_edit.text().strip()
+
+        if not text.isdigit() or int(text) <= 0:
+            self.statusBar().showMessage("Введите корректное число плат")
+            return
+
+        t_comand = int(text)
+        COMMAND = f"t{t_comand:02d}"  # t01, t05, t12 ...
+
+        self.save_command_to_ini()
+
+        self.statusBar().showMessage(
+            f"Установлена команда {COMMAND}, плат: {t_comand}"
+        )
 
 
 

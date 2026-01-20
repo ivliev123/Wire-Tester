@@ -48,6 +48,7 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.wires_table.setSelectionBehavior(QTableWidget.SelectRows)
         # self.wires_table.doubleClicked.connect(self.on_wire_double_clicked)
         self.wires_table.itemChanged.connect(self.on_table_item_changed)
+        self.wires_table.blockSignals(True) # запрещаем механизм изменения по редактированию...
 
         
         # Кнопки управления
@@ -305,7 +306,7 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
             intersections = [i for i in zero_indexes if i != row_index]
             intersections_array.append(intersections)
 
-        # далее реализовать таблицу в блоке read
+        # далее реализовать таблицу в блоке edit
         wire_points = len(intersections_array)
         self.wires_table.setRowCount(wire_points)
 
