@@ -54,8 +54,10 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
         ])
         self.wires_table.setSelectionBehavior(QTableWidget.SelectRows)
         # self.wires_table.doubleClicked.connect(self.on_wire_double_clicked)
+
         self.wires_table.itemChanged.connect(self.on_table_item_changed)
-        self.wires_table.blockSignals(True) # запрещаем механизм изменения по редактированию...
+        # в случае проблемы раскомментировать строку
+        # self.wires_table.blockSignals(True) # запрещаем механизм изменения по редактированию...
 
         self.wires_table.setSizePolicy(
             QSizePolicy.Expanding,

@@ -225,46 +225,182 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
 
 
 
+    # def do_check(self):
+
+    #     total_ok = 0
+    #     total_warning = 0
+    #     total_error = 0
+
+    #     intersections_array = []
+
+    #     # формируем фактические замыкания
+    #     for row_index, row in enumerate(self.read_bit_rows):
+    #         mirrored = row[::-1]
+    #         zero_indexes = [i for i, bit in enumerate(mirrored) if bit == 0]
+    #         intersections = [i for i in zero_indexes if i != row_index]
+    #         intersections_array.append(intersections)
+
+    #     table = self.wires_table
+    #     table.setRowCount(len(intersections_array)) #возможно нужно задавать количество строк по количеству строк из CSV
+
+    #     for i, intersections in enumerate(intersections_array):
+            
+    #         pin = i + 1
+
+    #         # номер вывода
+    #         item = QTableWidgetItem(str(pin))
+    #         item.setTextAlignment(Qt.AlignCenter)
+    #         table.setItem(i, 1, item)
+
+    #         # ---------- ФАКТ ----------
+    #         fact = {j + 1 for j in intersections} #фактические пересечения
+    #         print(fact)
+
+    #         # ---------- ОЖИДАЕМОЕ ----------  // это из CSV файла
+    #         text = self.wire_data_from_file[i][2]
+    #         expected = set()
+    #         for part in text.split(","):
+    #             part = part.strip()
+    #             if part.isdigit():
+    #                 expected.add(int(part))
+    #         # print(expected)
+
+    #         ok = fact & expected
+    #         warning = expected - fact
+    #         error = fact - expected
+
+    #         total_ok += len(ok)
+    #         total_warning += len(warning)
+    #         total_error += len(error)
+
+
+    #         # ---------- ВИДЖЕТ ДЛЯ КНОПОК ----------
+    #         cell_widget = QWidget()
+    #         layout = QHBoxLayout(cell_widget)
+    #         layout.setContentsMargins(0, 0, 0, 0)
+    #         layout.setSpacing(4)
+    #         layout.setAlignment(Qt.AlignCenter)  # вертикальное выравнивание
+
+    #         btn_color_success = "28A745"
+    #         btn_color_warning = "FFC107"
+    #         btn_color_danger  = "DC3545"
+
+    #         max_btn_count = 0
+
+    #         for other_pin in sorted(fact | expected):
+
+    #             btn_count = len(fact | expected)
+    #             print(btn_count)
+    #             max_btn_count = max(max_btn_count, btn_count)
+
+    #             if other_pin in fact and other_pin in expected:
+    #                 color = btn_color_success     # 🟢 есть и ожидали
+    #             elif other_pin in fact and other_pin not in expected:
+    #                 color = btn_color_danger      # 🔴 есть, но не ожидали
+    #             else:
+    #                 color = btn_color_warning     # 🟡 ожидали, но нет
+
+    #             btn = QPushButton(str(other_pin))
+    #             btn.setEnabled(False)
+    #             btn.setFixedSize(28, 28)
+
+    #             btn.setStyleSheet(
+    #                 f"background-color: #{color}; border-radius: 14px; color: white;"
+    #             )
+
+    #             layout.addWidget(btn)
+
+    #         table.setCellWidget(i, 2, cell_widget)
+
+    #         BTN_SIZE = 28
+    #         SPACING = 4
+    #         MARGINS = 8  # небольшой запас
+
+    #         # max_btn_count = max_btn_count + 1
+
+            
+    #         column_width = max_btn_count * BTN_SIZE + (max_btn_count - 1) * SPACING + MARGINS
+    #         print(max_btn_count)
+    #         print(column_width)
+    #         table.setColumnWidth(2, column_width)
+        
+    #     # ---------- ИТОГОВАЯ ОЦЕНКА ----------
+    #     if total_error > 0:
+    #         self.DangerWindow = DangerWindow(
+    #             f"Обнаружены критические ошибки!\n"
+    #             f"OK: {total_ok}, WARNING: {total_warning}, ERROR: {total_error}"
+    #         )
+    #         self.DangerWindow.Window.show()
+
+    #     elif total_warning > 0:
+    #         self.WarningWindow = WarningWindow(
+    #             f"Есть отклонения.\n"
+    #             f"OK: {total_ok}, WARNING: {total_warning}"
+    #         )
+    #         self.WarningWindow.Window.show()
+
+    #     else:
+    #         self.SuccessWindow = SuccessWindow(
+    #             f"Проверка успешна.\n"
+    #             f"Все соединения корректны ({total_ok})"
+    #         )
+    #         self.SuccessWindow.Window.show()
+
+
+
+
     def do_check(self):
 
         total_ok = 0
         total_warning = 0
         total_error = 0
 
-        intersections_array = []
+        table = self.wires_table
+        table.clearContents()
 
-        # формируем фактические замыкания
+        # ---------- формируем фактические замыкания ----------
+        intersections_array = []
         for row_index, row in enumerate(self.read_bit_rows):
             mirrored = row[::-1]
             zero_indexes = [i for i, bit in enumerate(mirrored) if bit == 0]
             intersections = [i for i in zero_indexes if i != row_index]
             intersections_array.append(intersections)
 
-        table = self.wires_table
-        table.setRowCount(len(intersections_array)) #возможно нужно задавать количество строк по количеству строк из CSV
+        table.setRowCount(len(intersections_array))
 
+        BTN_SIZE = 28
+        SPACING = 4
+        MARGINS = 8
+
+        btn_color_success = "28A745"
+        btn_color_warning = "FFC107"
+        btn_color_danger  = "DC3545"
+
+        max_column_width = 0  # запомним максимальную ширину для столбца
+
+        # ---------- обработка строк ----------
         for i, intersections in enumerate(intersections_array):
-            
+
             pin = i + 1
 
-            # номер вывода
+            # --- номер вывода ---
             item = QTableWidgetItem(str(pin))
             item.setTextAlignment(Qt.AlignCenter)
             table.setItem(i, 1, item)
 
             # ---------- ФАКТ ----------
-            fact = {j + 1 for j in intersections} #фактические пересечения
-            print(fact)
+            fact = {j + 1 for j in intersections}
 
-            # ---------- ОЖИДАЕМОЕ ----------  // это из CSV файла
-            text = self.wire_data_from_file[i][2]
+            # ---------- ОЖИДАЕМОЕ (из CSV) ----------
             expected = set()
-            for part in text.split(","):
-                part = part.strip()
-                if part.isdigit():
-                    expected.add(int(part))
-            # print(expected)
+            if i < len(self.wire_data_from_file):
+                text = self.wire_data_from_file[i][2]
+                for part in text.split(","):
+                    part = part.strip()
+                    if part.isdigit():
+                        expected.add(int(part))
 
+            # ---------- анализ ----------
             ok = fact & expected
             warning = expected - fact
             error = fact - expected
@@ -273,54 +409,50 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
             total_warning += len(warning)
             total_error += len(error)
 
-
-            # ---------- ВИДЖЕТ ДЛЯ КНОПОК ----------
+            # ---------- виджет с кнопками ----------
             cell_widget = QWidget()
             layout = QHBoxLayout(cell_widget)
             layout.setContentsMargins(0, 0, 0, 0)
-            layout.setSpacing(4)
-            layout.setAlignment(Qt.AlignCenter)  # вертикальное выравнивание
+            layout.setSpacing(SPACING)
+            layout.setAlignment(Qt.AlignCenter)
 
-            btn_color_success = "28A745"
-            btn_color_warning = "FFC107"
-            btn_color_danger  = "DC3545"
+            all_pins = sorted(fact | expected)
+            btn_count = len(all_pins)
 
-            max_btn_count = 0
-
-            for other_pin in sorted(fact | expected):
-
-                btn_count = len(fact | expected)
-                max_btn_count = max(max_btn_count, btn_count)
+            for other_pin in all_pins:
 
                 if other_pin in fact and other_pin in expected:
-                    color = btn_color_success     # 🟢 есть и ожидали
+                    color = btn_color_success     # OK
                 elif other_pin in fact and other_pin not in expected:
-                    color = btn_color_danger      # 🔴 есть, но не ожидали
+                    color = btn_color_danger      # ERROR
                 else:
-                    color = btn_color_warning     # 🟡 ожидали, но нет
+                    color = btn_color_warning     # WARNING
 
                 btn = QPushButton(str(other_pin))
                 btn.setEnabled(False)
-                btn.setFixedSize(28, 28)
-
+                btn.setFixedSize(BTN_SIZE, BTN_SIZE)
                 btn.setStyleSheet(
-                    f"background-color: #{color}; border-radius: 14px; color: white;"
+                    f"background-color: #{color}; border-radius: {BTN_SIZE // 2}px; color: white;"
                 )
 
                 layout.addWidget(btn)
 
             table.setCellWidget(i, 2, cell_widget)
 
-            BTN_SIZE = 28
-            SPACING = 4
-            MARGINS = 8  # небольшой запас
+            # ---------- расчет ширины ----------
+            if btn_count > 0:
+                column_width = (
+                    btn_count * BTN_SIZE +
+                    (btn_count - 1) * SPACING +
+                    MARGINS
+                )
+                max_column_width = max(max_column_width, column_width)
 
-            max_btn_count = max_btn_count + 1
+        # ---------- применяем ширину один раз ----------
+        if max_column_width > 0:
+            table.setColumnWidth(2, max_column_width)
 
-            column_width = max_btn_count * BTN_SIZE + (max_btn_count - 1) * SPACING + MARGINS
-            table.setColumnWidth(2, column_width)
-        
-        # ---------- ИТОГОВАЯ ОЦЕНКА ----------
+        # ---------- итоговая оценка ----------
         if total_error > 0:
             self.DangerWindow = DangerWindow(
                 f"Обнаружены критические ошибки!\n"
@@ -341,6 +473,8 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
                 f"Все соединения корректны ({total_ok})"
             )
             self.SuccessWindow.Window.show()
+
+
 
 
 
