@@ -1,7 +1,9 @@
 from PyQt5.QtWidgets import (
     QWidget, QGroupBox, QLabel, 
     QGridLayout, QTableWidget, QTableWidgetItem,
-    QPushButton, QVBoxLayout, QHBoxLayout, QSpacerItem, QSizePolicy, QLineEdit, QMessageBox, QFileDialog
+    QPushButton, QVBoxLayout, QHBoxLayout, QSpacerItem, 
+    QSizePolicy, QLineEdit, QMessageBox, QFileDialog,
+    QAbstractItemView
 )
 from PyQt5.QtGui import QPixmap, QColor, QIcon, QFont
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -10,6 +12,11 @@ import csv
 import os
 
 from IconModul import icon
+
+from MessageWindows import WarningWindow
+from MessageWindows import DangerWindow
+from MessageWindows import SuccessWindow
+from MessageWindows import InfoWindow
 
 
 class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
@@ -55,7 +62,10 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.wires_table.setHorizontalHeaderLabels([
             "Разъем", "Вывод", "Вывод"
         ])
+
+        self.wires_table.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
         self.wires_table.setSelectionBehavior(QTableWidget.SelectRows)
+
         # self.wires_table.doubleClicked.connect(self.on_wire_double_clicked)
         
         # Кнопки управления
@@ -78,6 +88,10 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.check_button.setIcon(self.icon.search_icon)
         self.check_button.clicked.connect(self.do_check)
 
+        self.save_button = QPushButton("Сохранить результаты проверки")
+        self.save_button.setIcon(self.icon.save_icon)
+        self.save_button.clicked.connect(self.save_check_result)
+
 
         self.test_status_label = QLabel("")
         
@@ -99,9 +113,11 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         buttons_layout.addWidget(self.line_edit_file,  0, 0, 1, 1)
         buttons_layout.addWidget(self.open_button,     0, 1, 1, 1)
         buttons_layout.addWidget(self.check_button,    1, 0, 1, 2)
+        buttons_layout.addWidget(self.save_button,     2, 0, 1, 2)
+        
 
-        buttons_layout.addWidget(self.test_status_label,     2, 0, 1, 1)
-        buttons_layout.addWidget(self.test_status_button,    2, 1, 1, 1, alignment=Qt.AlignRight)
+        buttons_layout.addWidget(self.test_status_label,     3, 0, 1, 1)
+        buttons_layout.addWidget(self.test_status_button,    3, 1, 1, 1, alignment=Qt.AlignRight)
 
 
 
@@ -128,17 +144,17 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         btn_color_danger  = "DC3545"
 
         if self.update_data_to_test == 0:
-            self.update_data_to_test_text = "Данные прозвонки не загружены"
+            self.update_data_to_test_text = "Данные прозвонки отсутствуют"
             self.test_status_button.setIcon(QIcon(self.icon.error_icon))
             color = btn_color_secondary
         if self.update_data_to_test == 1:
             self.update_data_to_test_text = "Данные прозвонки обновлены"
             self.test_status_button.setIcon(QIcon(self.icon.check_mark_icon))
             color = btn_color_success
-        if self.update_data_to_test == 2:
-            self.update_data_to_test_text = "Данные прозвонки необходимо обновить"
-            self.test_status_button.setIcon(QIcon(self.icon.alert_icon))
-            color = btn_color_warning
+        # if self.update_data_to_test == 2:
+        #     self.update_data_to_test_text = "Данные прозвонки необходимо обновить"
+        #     self.test_status_button.setIcon(QIcon(self.icon.alert_icon))
+        #     color = btn_color_warning
 
         self.test_status_label.setText(self.update_data_to_test_text)
         self.test_status_button.setStyleSheet(f"background-color: #{color}; border-radius: {border_radius}px;")        
@@ -165,7 +181,9 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
                 rows = list(reader)
 
             if not rows:
-                QMessageBox.warning(self, "Ошибка", "Файл пуст")
+                # QMessageBox.warning(self, "Ошибка", "Файл пуст")
+                self.WarningWindow  = WarningWindow("Ошибка. Файл пуст")
+                self.WarningWindow.Window.show()
                 return
 
             headers = rows[0]
@@ -176,11 +194,13 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
 
             # Проверяем количество столбцов
             if len(headers) != self.wires_table.columnCount():
-                QMessageBox.warning(
-                    self,
-                    "Ошибка",
-                    "Неверный формат файла (не совпадает количество столбцов)"
-                )
+                # QMessageBox.warning(
+                #     self,
+                #     "Ошибка",
+                #     "Неверный формат файла (не совпадает количество столбцов)"
+                # )
+                self.DangerWindow = DangerWindow("Ошибка. Неверный формат файла (не совпадает количество столбцов)")
+                self.DangerWindow.Window.show()
                 return
 
             # Очищаем таблицу
@@ -190,19 +210,27 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
             # Загружаем данные в таблицу
             self.line_edit_file.setText(os.path.basename(file_path))
 
-            QMessageBox.information(
-                self,
-                "Информация",
-                f"Файл {os.path.basename(file_path)} успешно загружен"
-            )
+            # QMessageBox.information(
+            #     self,
+            #     "Информация",
+            #     f"Файл {os.path.basename(file_path)} успешно загружен"
+            # )
+            self.InfoWindow = InfoWindow(f"Файл {os.path.basename(file_path)} успешно загружен")
+            self.InfoWindow.Window.show()
 
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", str(e))
+            # QMessageBox.critical(self, "Ошибка", str(e))
+            print(str(e))
 
 
 
 
     def do_check(self):
+
+        total_ok = 0
+        total_warning = 0
+        total_error = 0
+
         intersections_array = []
 
         # формируем фактические замыкания
@@ -237,6 +265,15 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
                     expected.add(int(part))
             # print(expected)
 
+            ok = fact & expected
+            warning = expected - fact
+            error = fact - expected
+
+            total_ok += len(ok)
+            total_warning += len(warning)
+            total_error += len(error)
+
+
             # ---------- ВИДЖЕТ ДЛЯ КНОПОК ----------
             cell_widget = QWidget()
             layout = QHBoxLayout(cell_widget)
@@ -244,13 +281,16 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
             layout.setSpacing(4)
             layout.setAlignment(Qt.AlignCenter)  # вертикальное выравнивание
 
-
-
             btn_color_success = "28A745"
             btn_color_warning = "FFC107"
             btn_color_danger  = "DC3545"
 
+            max_btn_count = 0
+
             for other_pin in sorted(fact | expected):
+
+                btn_count = len(fact | expected)
+                max_btn_count = max(max_btn_count, btn_count)
 
                 if other_pin in fact and other_pin in expected:
                     color = btn_color_success     # 🟢 есть и ожидали
@@ -270,3 +310,133 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
                 layout.addWidget(btn)
 
             table.setCellWidget(i, 2, cell_widget)
+
+            BTN_SIZE = 28
+            SPACING = 4
+            MARGINS = 8  # небольшой запас
+
+            max_btn_count = max_btn_count + 1
+
+            column_width = max_btn_count * BTN_SIZE + (max_btn_count - 1) * SPACING + MARGINS
+            table.setColumnWidth(2, column_width)
+        
+        # ---------- ИТОГОВАЯ ОЦЕНКА ----------
+        if total_error > 0:
+            self.DangerWindow = DangerWindow(
+                f"Обнаружены критические ошибки!\n"
+                f"OK: {total_ok}, WARNING: {total_warning}, ERROR: {total_error}"
+            )
+            self.DangerWindow.Window.show()
+
+        elif total_warning > 0:
+            self.WarningWindow = WarningWindow(
+                f"Есть отклонения.\n"
+                f"OK: {total_ok}, WARNING: {total_warning}"
+            )
+            self.WarningWindow.Window.show()
+
+        else:
+            self.SuccessWindow = SuccessWindow(
+                f"Проверка успешна.\n"
+                f"Все соединения корректны ({total_ok})"
+            )
+            self.SuccessWindow.Window.show()
+
+
+
+    # def save_check_result(self):
+    #     print("запись в файл") # Заглушка 
+
+    def save_check_result(self):
+        if not self.wire_data_from_file or self.wires_table.rowCount() == 0:
+            self.WarningWindow = WarningWindow("Нет данных для сохранения")
+            self.WarningWindow.Window.show()
+            return
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Сохранить результаты проверки",
+            "check_result.xlsx",
+            "Excel файлы (*.xlsx)"
+        )
+
+        if not file_path:
+            return
+
+        try:
+            from openpyxl import Workbook
+            from openpyxl.styles import Font
+            from openpyxl.styles import Border, Side
+
+
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Проверка проводов"
+
+            # ---------- Заголовки ----------
+            headers = ["Разъём", "Вывод", "OK", "WARNING", "ERROR"]
+            ws.append(headers)
+
+            for col in range(1, len(headers) + 1):
+                ws.cell(row=1, column=col).font = Font(bold=True)
+
+            # ---------- Данные ----------
+            for row in range(self.wires_table.rowCount()):
+                pin = row + 1
+
+                # ---------- ОЖИДАЕМОЕ ----------
+                expected_text = self.wire_data_from_file[row][2]
+                expected = set()
+                for part in expected_text.split(","):
+                    part = part.strip()
+                    if part.isdigit():
+                        expected.add(int(part))
+
+                # ---------- ФАКТИЧЕСКОЕ ----------
+                fact = set()
+                cell_widget = self.wires_table.cellWidget(row, 2)
+                if cell_widget:
+                    for i in range(cell_widget.layout().count()):
+                        btn = cell_widget.layout().itemAt(i).widget()
+                        if btn:
+                            fact.add(int(btn.text()))
+
+                ok = sorted(fact & expected)
+                warning = sorted(expected - fact)
+                error = sorted(fact - expected)
+
+                ws.append([
+                    "",                       # Разъём (можно позже заполнить)
+                    pin,
+                    ", ".join(map(str, ok)),
+                    ", ".join(map(str, warning)),
+                    ", ".join(map(str, error))
+                ])
+
+            # ---------- Автоширина ----------
+            for column_cells in ws.columns:
+                length = max(len(str(cell.value)) if cell.value else 0 for cell in column_cells)
+                ws.column_dimensions[column_cells[0].column_letter].width = length + 4
+
+
+            thin = Side(style="thin")
+            border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+            for row in ws.iter_rows(
+                min_row=1,
+                max_row=ws.max_row,
+                min_col=1,
+                max_col=ws.max_column
+            ):
+                for cell in row:
+                    cell.border = border
+
+
+            wb.save(file_path)
+
+            self.SuccessWindow = SuccessWindow("Результаты проверки сохранены")
+            self.SuccessWindow.Window.show()
+
+        except Exception as e:
+            self.DangerWindow = DangerWindow(f"Ошибка сохранения:\n{e}")
+            self.DangerWindow.Window.show()

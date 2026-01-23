@@ -39,6 +39,7 @@ class icon(QWidget):
         self.alert_icon = QIcon('icons/alert.png')
         self.check_mark_icon = QIcon('icons/check-mark.png')
         self.error_icon = QIcon('icons/error.png')
+        self.info_icon = QIcon('icons/info.png')
 
         
 

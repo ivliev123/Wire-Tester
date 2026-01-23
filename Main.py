@@ -13,7 +13,6 @@ from ReadWireGroup import ReadWireGroup
 from TestWireGroup import TestWireGroup
 from EditWireGroup import EditWireGroup
 
-
 import time
 import os
 import serial
@@ -23,9 +22,12 @@ from IconModul import icon
 
 import configparser
 
+from MessageWindows import WarningWindow
+from MessageWindows import DangerWindow
+from MessageWindows import SuccessWindow
+from MessageWindows import InfoWindow
 
 
-# COMMAND = "t05"
 COMMAND = "t01" 
 t_comand = 1
 
@@ -42,7 +44,6 @@ def bytes_to_hex(data, cols=16):
 
 def bytes_to_bin(data):
     return ' '.join(f'{b:08b}' for b in data)
-
 
 
 class SerialManager:
@@ -80,7 +81,6 @@ class SerialManager:
 
 
 
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -97,14 +97,13 @@ class MainWindow(QMainWindow):
         self.icon = icon()
 
         # Команда / количество плат
-        comand_box = QGroupBox("Команда / количество плате")
+        comand_box = QGroupBox("Команда / количество плат")
         comand_layout = QGridLayout()
 
         self.comand_setup_line_edit = QLineEdit()
         self.comand_setup_button = QPushButton("Задать")
         self.comand_setup_button.clicked.connect(self.set_command)
 
-        
         
         comand_layout.addWidget(self.comand_setup_line_edit, 0, 0)
         comand_layout.addWidget(self.comand_setup_button, 0, 1)
@@ -158,7 +157,7 @@ class MainWindow(QMainWindow):
 
         # обработки нажатия кнопок нужно создавать тут ...
         self.read_wire_group.read_button.clicked.connect(self.do_read_wire)
-        self.read_wire_group.check_button.clicked.connect(self.to_test_wire)
+        # self.read_wire_group.check_button.clicked.connect(self.to_test_wire)
         self.read_wire_group.edit_button.clicked.connect(self.to_edit_wire)
 
         self.read_wire_group.test_test_button.clicked.connect(self.test_test)
@@ -174,6 +173,16 @@ class MainWindow(QMainWindow):
         self.read_wire_write_file() # прозваниваем провод // записываем в файл 
         self.read_bit_rows = self.read_file() # читаем с файла
         self.read_visual(self.read_bit_rows) #отображаем данные в таблице
+        self.to_test_wire() # отправляем на проверку
+        
+        self.test_wire_group.update_data_to_test = 1
+        self.test_wire_group.to_update_data_to_test()
+        # отображаем информационное окно 
+        self.InfoWindow = InfoWindow(f"Прозвонка завершена")
+        self.InfoWindow.Window.show()
+
+
+
 
     def test_test(self):
         self.read_bit_rows = self.read_file()
@@ -202,18 +211,7 @@ class MainWindow(QMainWindow):
     
     def to_edit_wire(self):
         self.edit_wire_group.read_bit_rows =  self.read_bit_rows
-        # self.edit_visual(self.edit_wire_group.read_bit_rows)
-        # self.edit_wire_group.edit_visual(self.edit_wire_group.read_bit_rows)
-        
-        # self.edit_wire_group.wires_table.blockSignals(True)
-        
         self.edit_wire_group.edit_visual(self.read_bit_rows)
-
-        # self.edit_wire_group.wires_table.blockSignals(False)
-
-        # self.read_visual(self.read_bit_rows)
-
-
 
 
 
@@ -253,8 +251,10 @@ class MainWindow(QMainWindow):
             self.read_wire_group.wires_table.setItem(point_i, 2, QTableWidgetItem(intersections_text))
 
 
+        # table = self.read_wire_group.wires_table
+        # table.resizeColumnToContents(2)
 
-
+        self.read_wire_group.wires_table.resizeColumnToContents(2)
 
     # кривое косое чтение но работает
     def read_wire_write_file(self):

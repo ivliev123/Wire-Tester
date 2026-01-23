@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (
     QWidget, QGroupBox, QLabel, 
     QGridLayout, QTableWidget, QTableWidgetItem,
-    QPushButton, QVBoxLayout, QHBoxLayout, QSpacerItem, QSizePolicy
+    QPushButton, QVBoxLayout, QHBoxLayout, QSpacerItem, QSizePolicy, QHeaderView, QAbstractItemView
 )
 from PyQt5.QtGui import QPixmap, QColor, QIcon, QFont
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -45,8 +45,15 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
         ])
         self.wires_table.setRowCount(1)
         self.wires_table.setSelectionBehavior(QTableWidget.SelectRows)
-        # self.wires_table.doubleClicked.connect(self.on_wire_double_clicked)
+
+        self.wires_table.setSizePolicy(
+            QSizePolicy.Expanding,
+            QSizePolicy.Expanding
+        )
+        self.wires_table.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
+        self.wires_table.setSelectionBehavior(QTableWidget.SelectRows)
         
+
         # Кнопки управления
         buttons_group = QGroupBox()
         buttons_group.setMaximumSize(1000, 150)
@@ -57,8 +64,8 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.read_button.setIcon(self.icon.tester_icon)
         # self.read_button.setIcon(QIcon('icons/tester.png'))
         
-        self.check_button = QPushButton("На проверку")
-        self.check_button.setIcon(self.icon.send_icon)
+        # self.check_button = QPushButton("На проверку")
+        # self.check_button.setIcon(self.icon.send_icon)
 
         self.edit_button = QPushButton("На редактирование")
         self.edit_button.setIcon(self.icon.send_icon)
@@ -70,7 +77,7 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
 
 
         buttons_layout.addWidget(self.read_button, 0, 0, 1, 1)
-        buttons_layout.addWidget(self.check_button, 1, 0, 1, 1)
+        # buttons_layout.addWidget(self.check_button, 1, 0, 1, 1)
         buttons_layout.addWidget(self.edit_button, 2, 0, 1, 1)
         buttons_layout.addWidget(self.test_test_button, 3, 0, 1, 1)
 

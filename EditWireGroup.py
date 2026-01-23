@@ -1,7 +1,8 @@
 from PyQt5.QtWidgets import (
     QWidget, QGroupBox, QLabel, 
     QGridLayout, QTableWidget, QTableWidgetItem,
-    QPushButton, QVBoxLayout, QHBoxLayout, QSpacerItem, QSizePolicy, QLineEdit, QMessageBox, QFileDialog
+    QPushButton, QVBoxLayout, QHBoxLayout, QSpacerItem, 
+    QSizePolicy, QLineEdit, QMessageBox, QFileDialog, QAbstractItemView
 )
 from PyQt5.QtGui import QPixmap, QColor, QIcon, QFont
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -10,6 +11,12 @@ import csv
 import os
 
 from IconModul import icon
+
+from MessageWindows import WarningWindow
+from MessageWindows import DangerWindow
+from MessageWindows import SuccessWindow
+from MessageWindows import InfoWindow
+
 
 
 class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
@@ -50,6 +57,12 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.wires_table.itemChanged.connect(self.on_table_item_changed)
         self.wires_table.blockSignals(True) # запрещаем механизм изменения по редактированию...
 
+        self.wires_table.setSizePolicy(
+            QSizePolicy.Expanding,
+            QSizePolicy.Expanding
+        )
+        self.wires_table.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
+        self.wires_table.setSelectionBehavior(QTableWidget.SelectRows)
         
         # Кнопки управления
         buttons_group = QGroupBox()
@@ -199,7 +212,9 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
 
     def save_to_csv(self, file_path):
         if self.wires_table.rowCount() == 0:
-            QMessageBox.information(self, "Информация", "Нет данных для сохранения")
+            # QMessageBox.information(self, "Информация", "Нет данных для сохранения")
+            self.WarningWindow  = WarningWindow("Нет данных для сохранения")
+            self.WarningWindow.Window.show()
             return False
 
         try:
@@ -223,11 +238,16 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
 
             # self.line_file_name.setText(os.path.basename(file_path))
             # Information
-            QMessageBox.information(self, "Информация", f"Файл {file_path} успешно сохранен")
+            # QMessageBox.information(self, "Информация", f"Файл {file_path} успешно сохранен")
+            self.InfoWindow = InfoWindow(f"Файл {file_path} успешно сохранен")
+            self.InfoWindow.Window.show()
+
             return True
 
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", str(e))
+            # QMessageBox.critical(self, "Ошибка", str(e))
+            self.DangerWindow = DangerWindow(str(e))
+            self.DangerWindow.Window.show()
             return False
 
 
@@ -251,7 +271,9 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
                 rows = list(reader)
 
             if not rows:
-                QMessageBox.warning(self, "Ошибка", "Файл пуст")
+                # QMessageBox.warning(self, "Ошибка", "Файл пуст")
+                self.DangerWindow = DangerWindow("Ошибка. Файл пуст")
+                self.DangerWindow.Window.show()
                 return
 
             headers = rows[0]
@@ -259,11 +281,13 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
 
             # Проверяем количество столбцов
             if len(headers) != self.wires_table.columnCount():
-                QMessageBox.warning(
-                    self,
-                    "Ошибка",
-                    "Неверный формат файла (не совпадает количество столбцов)"
-                )
+                # QMessageBox.warning(
+                #     self,
+                #     "Ошибка",
+                #     "Неверный формат файла (не совпадает количество столбцов)"
+                # )
+                self.DangerWindow = DangerWindow("Ошибка. Неверный формат файла (не совпадает количество столбцов)")
+                self.DangerWindow.Window.show()
                 return
 
             # Очищаем таблицу
@@ -281,15 +305,19 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
             # Обновляем имя файла
             self.line_file_name.setText(os.path.basename(file_path))
 
-            QMessageBox.information(
-                self,
-                "Информация",
-                f"Файл {os.path.basename(file_path)} успешно загружен"
-            )
+            # QMessageBox.information(
+            #     self,
+            #     "Информация",
+            #     f"Файл {os.path.basename(file_path)} успешно загружен"
+            # )
+            self.InfoWindow = InfoWindow(f"Файл {os.path.basename(file_path)} успешно загружен")
+            self.InfoWindow.Window.show()
+
+            
 
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", str(e))
-    
+            # QMessageBox.critical(self, "Ошибка", str(e))
+            print(str(e))
 
 
     def edit_visual(self, bit_rows):
@@ -329,3 +357,4 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
                 # item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # Снимаем флаг редактирования
                 item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
 
+        self.wires_table.resizeColumnToContents(2)
