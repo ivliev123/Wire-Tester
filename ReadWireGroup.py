@@ -79,7 +79,7 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
         buttons_layout.addWidget(self.read_button, 0, 0, 1, 1)
         # buttons_layout.addWidget(self.check_button, 1, 0, 1, 1)
         buttons_layout.addWidget(self.edit_button, 2, 0, 1, 1)
-        buttons_layout.addWidget(self.test_test_button, 3, 0, 1, 1)
+        # buttons_layout.addWidget(self.test_test_button, 3, 0, 1, 1)
 
         spacerItem = QSpacerItem(20, 40, QSizePolicy.Maximum, QSizePolicy.Expanding)
         buttons_layout.addItem(spacerItem)

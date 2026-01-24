@@ -381,11 +381,17 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         # ---------- обработка строк ----------
         for i, intersections in enumerate(intersections_array):
 
+
+            item_soket = QTableWidgetItem(str(self.wire_data_from_file[i][0]))
+            item_soket.setTextAlignment(Qt.AlignLeft)
+            table.setItem(i, 0, item_soket)
+
             pin = i + 1
 
             # --- номер вывода ---
             item = QTableWidgetItem(str(pin))
-            item.setTextAlignment(Qt.AlignCenter)
+            # item.setTextAlignment(Qt.AlignCenter)
+            item.setTextAlignment(Qt.AlignLeft)
             table.setItem(i, 1, item)
 
             # ---------- ФАКТ ----------
@@ -414,7 +420,8 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
             layout = QHBoxLayout(cell_widget)
             layout.setContentsMargins(0, 0, 0, 0)
             layout.setSpacing(SPACING)
-            layout.setAlignment(Qt.AlignCenter)
+            # layout.setAlignment(Qt.AlignCenter)
+            layout.setAlignment(Qt.AlignLeft)
 
             all_pins = sorted(fact | expected)
             btn_count = len(all_pins)
