@@ -175,9 +175,10 @@ class MainWindow(QMainWindow):
         self.read_visual(self.read_bit_rows) #отображаем данные в таблице
         self.to_test_wire() # отправляем на проверку
         
-        self.test_wire_group.update_data_to_test = 1
-        self.test_wire_group.to_update_data_to_test()
+        # self.test_wire_group.update_data_to_test = 1
+        # self.test_wire_group.to_update_data_to_test()
         # отображаем информационное окно 
+
         self.InfoWindow = InfoWindow(f"Прозвонка завершена")
         self.InfoWindow.Window.show()
 
@@ -189,8 +190,8 @@ class MainWindow(QMainWindow):
         self.read_visual(self.read_bit_rows)
         self.to_test_wire() # отправляем на проверку
 
-        self.test_wire_group.update_data_to_test = 1
-        self.test_wire_group.to_update_data_to_test()
+        # self.test_wire_group.update_data_to_test = 1
+        # self.test_wire_group.to_update_data_to_test()
 
 
 

@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (
     QGridLayout, QTableWidget, QTableWidgetItem,
     QPushButton, QVBoxLayout, QHBoxLayout, QSpacerItem, 
     QSizePolicy, QLineEdit, QMessageBox, QFileDialog,
-    QAbstractItemView
+    QAbstractItemView, QCheckBox
 )
 from PyQt5.QtGui import QPixmap, QColor, QIcon, QFont
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -17,6 +17,7 @@ from MessageWindows import WarningWindow
 from MessageWindows import DangerWindow
 from MessageWindows import SuccessWindow
 from MessageWindows import InfoWindow
+
 
 
 class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
@@ -45,7 +46,7 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.init_ui()
 
         # тут обновить статус
-        self.to_update_data_to_test()
+        # self.to_update_data_to_test()
 
     
     def init_ui(self):
@@ -70,15 +71,24 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         
         # Кнопки управления
         buttons_group = QGroupBox()
-        buttons_group.setMaximumSize(1000, 150)
+        buttons_group.setMaximumSize(1000, 200)
         buttons_layout = QGridLayout(buttons_group)
 
+        check_box_group = QGroupBox()
+        check_box_layout = QGridLayout(check_box_group)
+
+        self.check_box_num =  QCheckBox('Номер вывода', self)
+        self.check_box_num.toggle()
+        self.check_box_num.stateChanged.connect(self.update_buttons_text)
+
+        self.check_box_name = QCheckBox('Наименование разъема(вывода)', self)
+        self.check_box_name.toggle()
+        self.check_box_name.stateChanged.connect(self.update_buttons_text)
 
 
         self.line_edit_file = QLineEdit()
         self.line_edit_file.setStyleSheet('background : #ccc; ')
         self.line_edit_file.setReadOnly(1)
-
 
         self.open_button = QPushButton("Открыть")
         self.open_button.setIcon(self.icon.open_folder_icon)
@@ -93,31 +103,34 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.save_button.clicked.connect(self.save_check_result)
 
 
-        self.test_status_label = QLabel("")
+        # self.test_status_label = QLabel("")
+        # border_radius = 14
+        # btn_color_secondary = "6C757D"
+        # btn_color_success = "28A745"
+        # btn_color_warning = "FFC107"
+        # btn_color_danger  = "DC3545"
+
+        # # тут иконку состояния в виде кнопки 
+        # self.test_status_button = QPushButton("")
+        # # self.test_status_button.setMinimumSize(30, 30)
+        # self.test_status_button.setFixedSize(28, 28)
+        # # self.test_status_button.setIcon(QIcon())
+        # self.test_status_button.setStyleSheet(f"background-color: #{btn_color_secondary}; border-radius: {border_radius}px;")        
+
+
+        check_box_layout.addWidget(self.check_box_num,  0, 0, 1, 1)
+        check_box_layout.addWidget(self.check_box_name,  0, 1, 1, 1)
+
+        buttons_layout.addWidget(check_box_group,  0, 0, 1, 2)
+
+        buttons_layout.addWidget(self.line_edit_file,  1, 0, 1, 1)
+        buttons_layout.addWidget(self.open_button,     1, 1, 1, 1)
+        buttons_layout.addWidget(self.check_button,    2, 0, 1, 2)
+        buttons_layout.addWidget(self.save_button,     3, 0, 1, 2)
         
 
-        border_radius = 14
-        btn_color_secondary = "6C757D"
-        btn_color_success = "28A745"
-        btn_color_warning = "FFC107"
-        btn_color_danger  = "DC3545"
-
-        # тут иконку состояния в виде кнопки 
-        self.test_status_button = QPushButton("")
-        # self.test_status_button.setMinimumSize(30, 30)
-        self.test_status_button.setFixedSize(28, 28)
-        # self.test_status_button.setIcon(QIcon())
-        self.test_status_button.setStyleSheet(f"background-color: #{btn_color_secondary}; border-radius: {border_radius}px;")        
-
-
-        buttons_layout.addWidget(self.line_edit_file,  0, 0, 1, 1)
-        buttons_layout.addWidget(self.open_button,     0, 1, 1, 1)
-        buttons_layout.addWidget(self.check_button,    1, 0, 1, 2)
-        buttons_layout.addWidget(self.save_button,     2, 0, 1, 2)
-        
-
-        buttons_layout.addWidget(self.test_status_label,     3, 0, 1, 1)
-        buttons_layout.addWidget(self.test_status_button,    3, 1, 1, 1, alignment=Qt.AlignRight)
+        # buttons_layout.addWidget(self.test_status_label,     4, 0, 1, 1)
+        # buttons_layout.addWidget(self.test_status_button,    4, 1, 1, 1, alignment=Qt.AlignRight)
 
 
 
@@ -135,29 +148,25 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
 
     
 
-    def to_update_data_to_test(self):
+    # def to_update_data_to_test(self):
 
-        border_radius = 14
-        btn_color_secondary = "6C757D"
-        btn_color_success = "28A745"
-        btn_color_warning = "FFC107"
-        btn_color_danger  = "DC3545"
+    #     border_radius = 14
+    #     btn_color_secondary = "6C757D"
+    #     btn_color_success = "28A745"
+    #     btn_color_warning = "FFC107"
+    #     btn_color_danger  = "DC3545"
 
-        if self.update_data_to_test == 0:
-            self.update_data_to_test_text = "Данные прозвонки отсутствуют"
-            self.test_status_button.setIcon(QIcon(self.icon.error_icon))
-            color = btn_color_secondary
-        if self.update_data_to_test == 1:
-            self.update_data_to_test_text = "Данные прозвонки обновлены"
-            self.test_status_button.setIcon(QIcon(self.icon.check_mark_icon))
-            color = btn_color_success
-        # if self.update_data_to_test == 2:
-        #     self.update_data_to_test_text = "Данные прозвонки необходимо обновить"
-        #     self.test_status_button.setIcon(QIcon(self.icon.alert_icon))
-        #     color = btn_color_warning
+    #     if self.update_data_to_test == 0:
+    #         self.update_data_to_test_text = "Данные прозвонки отсутствуют"
+    #         self.test_status_button.setIcon(QIcon(self.icon.error_icon))
+    #         color = btn_color_secondary
+    #     if self.update_data_to_test == 1:
+    #         self.update_data_to_test_text = "Данные прозвонки обновлены"
+    #         self.test_status_button.setIcon(QIcon(self.icon.check_mark_icon))
+    #         color = btn_color_success
 
-        self.test_status_label.setText(self.update_data_to_test_text)
-        self.test_status_button.setStyleSheet(f"background-color: #{color}; border-radius: {border_radius}px;")        
+    #     self.test_status_label.setText(self.update_data_to_test_text)
+    #     self.test_status_button.setStyleSheet(f"background-color: #{color}; border-radius: {border_radius}px;")        
 
 
 
@@ -223,131 +232,40 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
             print(str(e))
 
 
+    def make_btn_text(self, pin_number, socket_name):
+        if self.check_box_num.isChecked() and self.check_box_name.isChecked():
+            return f"{pin_number}: {socket_name}"
+        elif self.check_box_num.isChecked():
+            return f"{pin_number}"
+        elif self.check_box_name.isChecked():
+            return f"{socket_name}"
+        else:
+            return ""
 
 
-    # def do_check(self):
+    def update_buttons_text(self):
+        table = self.wires_table
 
-    #     total_ok = 0
-    #     total_warning = 0
-    #     total_error = 0
+        for row in range(table.rowCount()):
+            cell_widget = table.cellWidget(row, 2)
+            if not cell_widget:
+                continue
 
-    #     intersections_array = []
+            layout = cell_widget.layout()
+            for i in range(layout.count()):
+                btn = layout.itemAt(i).widget()
+                if not btn:
+                    continue
 
-    #     # формируем фактические замыкания
-    #     for row_index, row in enumerate(self.read_bit_rows):
-    #         mirrored = row[::-1]
-    #         zero_indexes = [i for i, bit in enumerate(mirrored) if bit == 0]
-    #         intersections = [i for i in zero_indexes if i != row_index]
-    #         intersections_array.append(intersections)
+                pin = btn.property("pin_number")
+                socket = btn.property("socket_name")
 
-    #     table = self.wires_table
-    #     table.setRowCount(len(intersections_array)) #возможно нужно задавать количество строк по количеству строк из CSV
+                btn.setText(self.make_btn_text(pin, socket))
+                btn.adjustSize()
 
-    #     for i, intersections in enumerate(intersections_array):
-            
-    #         pin = i + 1
-
-    #         # номер вывода
-    #         item = QTableWidgetItem(str(pin))
-    #         item.setTextAlignment(Qt.AlignCenter)
-    #         table.setItem(i, 1, item)
-
-    #         # ---------- ФАКТ ----------
-    #         fact = {j + 1 for j in intersections} #фактические пересечения
-    #         print(fact)
-
-    #         # ---------- ОЖИДАЕМОЕ ----------  // это из CSV файла
-    #         text = self.wire_data_from_file[i][2]
-    #         expected = set()
-    #         for part in text.split(","):
-    #             part = part.strip()
-    #             if part.isdigit():
-    #                 expected.add(int(part))
-    #         # print(expected)
-
-    #         ok = fact & expected
-    #         warning = expected - fact
-    #         error = fact - expected
-
-    #         total_ok += len(ok)
-    #         total_warning += len(warning)
-    #         total_error += len(error)
-
-
-    #         # ---------- ВИДЖЕТ ДЛЯ КНОПОК ----------
-    #         cell_widget = QWidget()
-    #         layout = QHBoxLayout(cell_widget)
-    #         layout.setContentsMargins(0, 0, 0, 0)
-    #         layout.setSpacing(4)
-    #         layout.setAlignment(Qt.AlignCenter)  # вертикальное выравнивание
-
-    #         btn_color_success = "28A745"
-    #         btn_color_warning = "FFC107"
-    #         btn_color_danger  = "DC3545"
-
-    #         max_btn_count = 0
-
-    #         for other_pin in sorted(fact | expected):
-
-    #             btn_count = len(fact | expected)
-    #             print(btn_count)
-    #             max_btn_count = max(max_btn_count, btn_count)
-
-    #             if other_pin in fact and other_pin in expected:
-    #                 color = btn_color_success     # 🟢 есть и ожидали
-    #             elif other_pin in fact and other_pin not in expected:
-    #                 color = btn_color_danger      # 🔴 есть, но не ожидали
-    #             else:
-    #                 color = btn_color_warning     # 🟡 ожидали, но нет
-
-    #             btn = QPushButton(str(other_pin))
-    #             btn.setEnabled(False)
-    #             btn.setFixedSize(28, 28)
-
-    #             btn.setStyleSheet(
-    #                 f"background-color: #{color}; border-radius: 14px; color: white;"
-    #             )
-
-    #             layout.addWidget(btn)
-
-    #         table.setCellWidget(i, 2, cell_widget)
-
-    #         BTN_SIZE = 28
-    #         SPACING = 4
-    #         MARGINS = 8  # небольшой запас
-
-    #         # max_btn_count = max_btn_count + 1
+        table.resizeColumnToContents(2)
 
             
-    #         column_width = max_btn_count * BTN_SIZE + (max_btn_count - 1) * SPACING + MARGINS
-    #         print(max_btn_count)
-    #         print(column_width)
-    #         table.setColumnWidth(2, column_width)
-        
-    #     # ---------- ИТОГОВАЯ ОЦЕНКА ----------
-    #     if total_error > 0:
-    #         self.DangerWindow = DangerWindow(
-    #             f"Обнаружены критические ошибки!\n"
-    #             f"OK: {total_ok}, WARNING: {total_warning}, ERROR: {total_error}"
-    #         )
-    #         self.DangerWindow.Window.show()
-
-    #     elif total_warning > 0:
-    #         self.WarningWindow = WarningWindow(
-    #             f"Есть отклонения.\n"
-    #             f"OK: {total_ok}, WARNING: {total_warning}"
-    #         )
-    #         self.WarningWindow.Window.show()
-
-    #     else:
-    #         self.SuccessWindow = SuccessWindow(
-    #             f"Проверка успешна.\n"
-    #             f"Все соединения корректны ({total_ok})"
-    #         )
-    #         self.SuccessWindow.Window.show()
-
-
-
 
     def do_check(self):
 
@@ -381,7 +299,7 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         # ---------- обработка строк ----------
         for i, intersections in enumerate(intersections_array):
 
-
+            
             item_soket = QTableWidgetItem(str(self.wire_data_from_file[i][0]))
             item_soket.setTextAlignment(Qt.AlignLeft)
             table.setItem(i, 0, item_soket)
@@ -429,35 +347,50 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
             for other_pin in all_pins:
 
                 if other_pin in fact and other_pin in expected:
-                    color = btn_color_success     # OK
+                    color = btn_color_success     # 🟢 есть и ожидали
                 elif other_pin in fact and other_pin not in expected:
-                    color = btn_color_danger      # ERROR
+                    color = btn_color_danger      # 🔴 есть, но не ожидали
                 else:
-                    color = btn_color_warning     # WARNING
+                    color = btn_color_warning     # 🟡 ожидали, но нет
 
-                btn = QPushButton(str(other_pin))
+                # вот здесь менять текст в зависимости от check_box
+
+                soket_pin_name = self.wire_data_from_file[other_pin - 1][0]
+                btn_text = self.make_btn_text(other_pin, soket_pin_name)
+
+                # if (self.check_box_num.isChecked() and self.check_box_name.isChecked()):
+                #     btn_text = f"{other_pin}: {soket_pin_name}"
+                # elif (self.check_box_num.isChecked() and not self.check_box_name.isChecked()):
+                #     btn_text = f"{other_pin}"
+                # elif (not self.check_box_num.isChecked() and self.check_box_name.isChecked()):
+                #     btn_text = f"{soket_pin_name}"
+                # else:
+                #     btn_text = f""
+
+                btn = QPushButton(btn_text)
                 btn.setEnabled(False)
-                btn.setFixedSize(BTN_SIZE, BTN_SIZE)
+
+                btn.setProperty("pin_number", other_pin)
+                btn.setProperty("socket_name", soket_pin_name)
+
                 btn.setStyleSheet(
-                    f"background-color: #{color}; border-radius: {BTN_SIZE // 2}px; color: white;"
+                    f"""
+                    background-color: #{color};
+                    border-radius: 12px;
+                    color: white;
+                    padding: 6px 12px;
+                    """
                 )
+
+                btn.adjustSize()
 
                 layout.addWidget(btn)
 
             table.setCellWidget(i, 2, cell_widget)
 
-            # ---------- расчет ширины ----------
-            if btn_count > 0:
-                column_width = (
-                    btn_count * BTN_SIZE +
-                    (btn_count - 1) * SPACING +
-                    MARGINS
-                )
-                max_column_width = max(max_column_width, column_width)
 
-        # ---------- применяем ширину один раз ----------
-        if max_column_width > 0:
-            table.setColumnWidth(2, max_column_width)
+        # ---------- применяем ширину ----------
+        table.resizeColumnToContents(2)
 
         # ---------- итоговая оценка ----------
         if total_error > 0:
@@ -485,9 +418,6 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
 
 
 
-    # def save_check_result(self):
-    #     print("запись в файл") # Заглушка 
-
     def save_check_result(self):
         if not self.wire_data_from_file or self.wires_table.rowCount() == 0:
             self.WarningWindow = WarningWindow("Нет данных для сохранения")
@@ -508,7 +438,6 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
             from openpyxl import Workbook
             from openpyxl.styles import Font
             from openpyxl.styles import Border, Side
-
 
             wb = Workbook()
             ws = wb.active
