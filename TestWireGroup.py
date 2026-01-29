@@ -71,7 +71,7 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         
         # Кнопки управления
         buttons_group = QGroupBox()
-        buttons_group.setMaximumSize(1000, 200)
+        buttons_group.setMaximumSize(1000, 180)
         buttons_layout = QGridLayout(buttons_group)
 
         check_box_group = QGroupBox()
@@ -417,7 +417,6 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
 
 
 
-
     def save_check_result(self):
         if not self.wire_data_from_file or self.wires_table.rowCount() == 0:
             self.WarningWindow = WarningWindow("Нет данных для сохранения")
@@ -436,26 +435,49 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
 
         try:
             from openpyxl import Workbook
-            from openpyxl.styles import Font
-            from openpyxl.styles import Border, Side
+            from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
             wb = Workbook()
             ws = wb.active
             ws.title = "Проверка проводов"
 
-            # ---------- Заголовки ----------
-            headers = ["Разъём", "Вывод", "OK", "WARNING", "ERROR"]
-            ws.append(headers)
+            # ---------- Стили ----------
+            header_font = Font(bold=True)
+            center_alignment = Alignment(horizontal='center', vertical='center')
+            thin = Side(style="thin")
+            border = Border(left=thin, right=thin, top=thin, bottom=thin)
+            
+            # Цвета для заливки ячеек
+            ok_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")  # Зеленый
+            warning_fill = PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid")  # Желтый
+            error_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")  # Красный
 
+            # ---------- Заголовки ----------
+            headers = ["№", "Разъём", "Вывод", "OK", "WARNING", "ERROR"]
+            ws.append(headers)
+            
+            # Стилизация заголовков
             for col in range(1, len(headers) + 1):
-                ws.cell(row=1, column=col).font = Font(bold=True)
+                cell = ws.cell(row=1, column=col)
+                cell.font = header_font
+                cell.alignment = center_alignment
+                cell.border = border
 
             # ---------- Данные ----------
-            for row in range(self.wires_table.rowCount()):
-                pin = row + 1
-
+            row_num = 2
+            total_ok_count = 0
+            total_warning_count = 0
+            total_error_count = 0
+            
+            for table_row in range(self.wires_table.rowCount()):
+                pin = table_row + 1
+                
+                # Получаем наименование разъема из таблицы
+                socket_item = self.wires_table.item(table_row, 0)
+                socket_name = socket_item.text() if socket_item else ""
+                
                 # ---------- ОЖИДАЕМОЕ ----------
-                expected_text = self.wire_data_from_file[row][2]
+                expected_text = self.wire_data_from_file[table_row][2] if table_row < len(self.wire_data_from_file) else ""
                 expected = set()
                 for part in expected_text.split(","):
                     part = part.strip()
@@ -464,49 +486,138 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
 
                 # ---------- ФАКТИЧЕСКОЕ ----------
                 fact = set()
-                cell_widget = self.wires_table.cellWidget(row, 2)
+                ok_details = []
+                warning_details = []
+                error_details = []
+                
+                cell_widget = self.wires_table.cellWidget(table_row, 2)
                 if cell_widget:
                     for i in range(cell_widget.layout().count()):
                         btn = cell_widget.layout().itemAt(i).widget()
                         if btn:
-                            fact.add(int(btn.text()))
+                            pin_num = btn.property("pin_number")
+                            socket_name_other = btn.property("socket_name") if btn.property("socket_name") else ""
+                            fact.add(pin_num)
+                            
+                            # Определяем тип соединения по цвету кнопки
+                            btn_style = btn.styleSheet()
+                            
+                            # Формируем строку с информацией о соединении
+                            if self.check_box_num.isChecked() and self.check_box_name.isChecked():
+                                connection_str = f"{pin_num}: {socket_name_other}"
+                            elif self.check_box_num.isChecked():
+                                connection_str = f"{pin_num}"
+                            elif self.check_box_name.isChecked():
+                                connection_str = f"{socket_name_other}"
+                            else:
+                                connection_str = f"{pin_num}"
+                            
+                            # Распределяем по соответствующим столбцам
+                            if "#28A745" in btn_style:  # OK
+                                ok_details.append(connection_str)
+                                total_ok_count += 1
+                            elif "#DC3545" in btn_style:  # ERROR
+                                error_details.append(connection_str)
+                                total_error_count += 1
+                            else:  # WARNING
+                                warning_details.append(connection_str)
+                                total_warning_count += 1
 
-                ok = sorted(fact & expected)
-                warning = sorted(expected - fact)
-                error = sorted(fact - expected)
+                # Также добавляем WARNING для ожидаемых, но не найденных соединений
+                for pin_num in expected:
+                    if pin_num not in fact:  # Ожидалось, но не найдено
+                        if pin_num <= len(self.wire_data_from_file):
+                            socket_name_other = self.wire_data_from_file[pin_num - 1][0]
+                        else:
+                            socket_name_other = f"Неизвестный ({pin_num})"
+                        
+                        if self.check_box_num.isChecked() and self.check_box_name.isChecked():
+                            warning_details.append(f"{pin_num}: {socket_name_other}")
+                        elif self.check_box_num.isChecked():
+                            warning_details.append(str(pin_num))
+                        elif self.check_box_name.isChecked():
+                            warning_details.append(socket_name_other)
+                        else:
+                            warning_details.append(str(pin_num))
+                        
+                        # Не увеличиваем счетчик здесь, так как это не фактическое соединение
 
+                # Добавляем строку в Excel
                 ws.append([
-                    "",                       # Разъём (можно позже заполнить)
-                    pin,
-                    ", ".join(map(str, ok)),
-                    ", ".join(map(str, warning)),
-                    ", ".join(map(str, error))
+                    table_row + 1,  # Порядковый номер
+                    socket_name,  # Наименование разъема
+                    pin,  # Номер вывода
+                    "\n".join(ok_details),  # OK соединения
+                    "\n".join(warning_details),  # WARNING соединения
+                    "\n".join(error_details)  # ERROR соединения
                 ])
-
-            # ---------- Автоширина ----------
-            for column_cells in ws.columns:
-                length = max(len(str(cell.value)) if cell.value else 0 for cell in column_cells)
-                ws.column_dimensions[column_cells[0].column_letter].width = length + 4
-
-
-            thin = Side(style="thin")
-            border = Border(left=thin, right=thin, top=thin, bottom=thin)
-
-            for row in ws.iter_rows(
-                min_row=1,
-                max_row=ws.max_row,
-                min_col=1,
-                max_col=ws.max_column
-            ):
-                for cell in row:
+                
+                # Применяем стили к ячейкам
+                for col in range(1, 7):  # 6 столбцов
+                    cell = ws.cell(row=row_num, column=col)
                     cell.border = border
+                    cell.alignment = Alignment(wrap_text=True, vertical='top')
+                
+                # Заливка ячеек в зависимости от наличия данных
+                if error_details:
+                    ws.cell(row=row_num, column=6).fill = error_fill  # ERROR
+                if warning_details:
+                    ws.cell(row=row_num, column=5).fill = warning_fill  # WARNING
+                if ok_details and not error_details and not warning_details:
+                    ws.cell(row=row_num, column=4).fill = ok_fill  # OK
+                
+                row_num += 1
 
+            # ---------- Автоширина с учетом переноса текста ----------
+            for column_cells in ws.columns:
+                max_length = 0
+                column = column_cells[0].column_letter
+                
+                for cell in column_cells:
+                    try:
+                        if cell.value:
+                            # Учитываем перенос строк
+                            lines = str(cell.value).split('\n')
+                            max_line_length = max(len(line) for line in lines)
+                            if max_line_length > max_length:
+                                max_length = max_line_length
+                    except:
+                        pass
+                
+                adjusted_width = min(max_length + 4, 50)  # Максимальная ширина 50 символов
+                ws.column_dimensions[column].width = adjusted_width
+
+            # ---------- Замерзшие области для удобства просмотра ----------
+            ws.freeze_panes = "B2"
+
+            # ---------- Итоговая статистика ----------
+            if row_num > 2:  # Если есть данные
+                ws.append([])  # Пустая строка
+                
+                stats_row = row_num + 1
+                ws.append([
+                    "", 
+                    "ИТОГО:", 
+                    "", 
+                    f"OK: {total_ok_count}", 
+                    f"WARNING: {total_warning_count}", 
+                    f"ERROR: {total_error_count}"
+                ])
+                
+                # Стилизация строки с итогами
+                for col in range(2, 7):
+                    cell = ws.cell(row=stats_row, column=col)
+                    cell.font = Font(bold=True)
+                    cell.border = border
 
             wb.save(file_path)
 
-            self.SuccessWindow = SuccessWindow("Результаты проверки сохранены")
+            self.SuccessWindow = SuccessWindow(f"Результаты проверки сохранены в:\n{os.path.basename(file_path)}")
             self.SuccessWindow.Window.show()
 
         except Exception as e:
-            self.DangerWindow = DangerWindow(f"Ошибка сохранения:\n{e}")
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"Ошибка при сохранении: {error_details}")
+            self.DangerWindow = DangerWindow(f"Ошибка сохранения:\n{str(e)}")
             self.DangerWindow.Window.show()

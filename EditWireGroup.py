@@ -68,9 +68,12 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
         
         # Кнопки управления
         buttons_group = QGroupBox()
-        buttons_group.setMaximumSize(1000, 150)
+        buttons_group.setMaximumSize(1000, 180)
         buttons_layout = QGridLayout(buttons_group)
 
+        self.make_template_button = QPushButton("Cоздать шаблон")
+        self.make_template_button.setIcon(self.icon.write_icon)
+        # self.make_template_button.clicked.connect(self.make_template) # функция будет реализована в Main.py
 
         self.line_file_name = QLineEdit()
         self.line_file_name.setStyleSheet('background : #ccc; ')
@@ -84,9 +87,10 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.save_button.setIcon(self.icon.save_icon)
         self.save_button.clicked.connect(self.save_as_csv)
         
-        buttons_layout.addWidget(self.line_file_name, 0, 0, 1, 1)
-        buttons_layout.addWidget(self.open_button,    0, 1, 1, 1)
-        buttons_layout.addWidget(self.save_button,    1, 0, 1, 2)
+        buttons_layout.addWidget(self.make_template_button, 0, 0, 1, 2)
+        buttons_layout.addWidget(self.line_file_name, 1, 0, 1, 1)
+        buttons_layout.addWidget(self.open_button,    1, 1, 1, 1)
+        buttons_layout.addWidget(self.save_button,    2, 0, 1, 2)
 
 
         spacerItem = QSpacerItem(20, 40, QSizePolicy.Maximum, QSizePolicy.Expanding)

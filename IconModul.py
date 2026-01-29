@@ -41,6 +41,8 @@ class icon(QWidget):
         self.error_icon = QIcon('icons/error.png')
         self.info_icon = QIcon('icons/info.png')
 
+        self.write_icon = QIcon('icons/write.png')
+
         
 
         

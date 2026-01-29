@@ -184,7 +184,6 @@ class MainWindow(QMainWindow):
 
 
 
-
     def test_test(self):
         self.read_bit_rows = self.read_file()
         self.read_visual(self.read_bit_rows)
@@ -196,9 +195,7 @@ class MainWindow(QMainWindow):
 
 
 
-    def to_test_wire(self):
-        # непонятно нужно ли взаимодействовать через отдельные объекты или все вместе городить 
-        # будем работать как с отдельными переменными отдельных объектов так как разные задачи у блоков  
+    def to_test_wire(self): 
         self.test_wire_group.read_bit_rows =  self.read_bit_rows
         # а теперь тут визуализацию в таблиц с editline
 
