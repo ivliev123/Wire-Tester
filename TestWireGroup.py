@@ -67,28 +67,29 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.wires_table.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
         self.wires_table.setSelectionBehavior(QTableWidget.SelectRows)
 
+        # сортировка
+        # self.wires_table.setSortingEnabled(True)
+        # # Если нужно настроить сортировку по умолчанию:
+        # self.wires_table.sortByColumn(0, Qt.AscendingOrder)  # Сортировка по первому столбцу
+
         # self.wires_table.doubleClicked.connect(self.on_wire_double_clicked)
         
+
+
         # Кнопки управления
-        buttons_group = QGroupBox()
-        buttons_group.setMaximumSize(1000, 180)
-        buttons_layout = QGridLayout(buttons_group)
+        buttons_group_main = QGroupBox()
+        buttons_group_main.setMaximumSize(1000, 220)
+        buttons_layout_main = QGridLayout(buttons_group_main)
 
-        check_box_group = QGroupBox()
-        check_box_layout = QGridLayout(check_box_group)
-
-        self.check_box_num =  QCheckBox('Номер вывода', self)
-        self.check_box_num.toggle()
-        self.check_box_num.stateChanged.connect(self.update_buttons_text)
-
-        self.check_box_name = QCheckBox('Наименование разъема(вывода)', self)
-        self.check_box_name.toggle()
-        self.check_box_name.stateChanged.connect(self.update_buttons_text)
+        # 1
+        buttons_group_1 = QGroupBox()
+        buttons_layout_1 = QGridLayout(buttons_group_1)
 
 
-        self.line_edit_file = QLineEdit()
-        self.line_edit_file.setStyleSheet('background : #ccc; ')
-        self.line_edit_file.setReadOnly(1)
+        self.line_test_file = QLineEdit()
+        self.line_test_file.setStyleSheet('background : #ccc; ')
+        self.line_test_file.setReadOnly(1)
+        self.line_test_file.setPlaceholderText("Выберите файл для тестирования...")
 
         self.open_button = QPushButton("Открыть")
         self.open_button.setIcon(self.icon.open_folder_icon)
@@ -102,45 +103,35 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.save_button.setIcon(self.icon.save_icon)
         self.save_button.clicked.connect(self.save_check_result)
 
+        buttons_layout_1.addWidget(self.line_test_file,  1, 0, 1, 1)
+        buttons_layout_1.addWidget(self.open_button,     1, 1, 1, 1)
+        buttons_layout_1.addWidget(self.check_button,    2, 0, 1, 2)
+        buttons_layout_1.addWidget(self.save_button,     3, 0, 1, 2)
+        
+        # 2
+        check_box_group = QGroupBox()
+        check_box_layout = QGridLayout(check_box_group)
 
-        # self.test_status_label = QLabel("")
-        # border_radius = 14
-        # btn_color_secondary = "6C757D"
-        # btn_color_success = "28A745"
-        # btn_color_warning = "FFC107"
-        # btn_color_danger  = "DC3545"
+        self.check_box_num =  QCheckBox('Номер вывода', self)
+        self.check_box_num.toggle()
+        self.check_box_num.stateChanged.connect(self.update_buttons_text)
 
-        # # тут иконку состояния в виде кнопки 
-        # self.test_status_button = QPushButton("")
-        # # self.test_status_button.setMinimumSize(30, 30)
-        # self.test_status_button.setFixedSize(28, 28)
-        # # self.test_status_button.setIcon(QIcon())
-        # self.test_status_button.setStyleSheet(f"background-color: #{btn_color_secondary}; border-radius: {border_radius}px;")        
-
+        self.check_box_name = QCheckBox('Наименование разъема(вывода)', self)
+        self.check_box_name.toggle()
+        self.check_box_name.stateChanged.connect(self.update_buttons_text)
 
         check_box_layout.addWidget(self.check_box_num,  0, 0, 1, 1)
         check_box_layout.addWidget(self.check_box_name,  0, 1, 1, 1)
 
-        buttons_layout.addWidget(check_box_group,  0, 0, 1, 2)
 
-        buttons_layout.addWidget(self.line_edit_file,  1, 0, 1, 1)
-        buttons_layout.addWidget(self.open_button,     1, 1, 1, 1)
-        buttons_layout.addWidget(self.check_button,    2, 0, 1, 2)
-        buttons_layout.addWidget(self.save_button,     3, 0, 1, 2)
-        
-
-        # buttons_layout.addWidget(self.test_status_label,     4, 0, 1, 1)
-        # buttons_layout.addWidget(self.test_status_button,    4, 1, 1, 1, alignment=Qt.AlignRight)
-
-
+        buttons_layout_main.addWidget(buttons_group_1)
+        buttons_layout_main.addWidget(check_box_group)
 
         spacerItem = QSpacerItem(20, 40, QSizePolicy.Maximum, QSizePolicy.Expanding)
-        buttons_layout.addItem(spacerItem)
-        # buttons_layout.setContentsMargins(0, 0, 0, 0)
-
+        buttons_layout_main.addItem(spacerItem)
 
         wires_layout.addWidget(self.wires_table)
-        wires_layout.addWidget(buttons_group)
+        wires_layout.addWidget(buttons_group_main)
         wires_group.setLayout(wires_layout)
 
 
@@ -217,7 +208,7 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
             self.wires_table.setRowCount(0)
 
             # Загружаем данные в таблицу
-            self.line_edit_file.setText(os.path.basename(file_path))
+            self.line_test_file.setText(os.path.basename(file_path))
 
             # QMessageBox.information(
             #     self,
@@ -357,15 +348,6 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
 
                 soket_pin_name = self.wire_data_from_file[other_pin - 1][0]
                 btn_text = self.make_btn_text(other_pin, soket_pin_name)
-
-                # if (self.check_box_num.isChecked() and self.check_box_name.isChecked()):
-                #     btn_text = f"{other_pin}: {soket_pin_name}"
-                # elif (self.check_box_num.isChecked() and not self.check_box_name.isChecked()):
-                #     btn_text = f"{other_pin}"
-                # elif (not self.check_box_num.isChecked() and self.check_box_name.isChecked()):
-                #     btn_text = f"{soket_pin_name}"
-                # else:
-                #     btn_text = f""
 
                 btn = QPushButton(btn_text)
                 btn.setEnabled(False)

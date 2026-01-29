@@ -67,13 +67,14 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.wires_table.setSelectionBehavior(QTableWidget.SelectRows)
         
         # Кнопки управления
-        buttons_group = QGroupBox()
-        buttons_group.setMaximumSize(1000, 180)
-        buttons_layout = QGridLayout(buttons_group)
+        buttons_group_main = QGroupBox()
+        buttons_group_main.setMaximumSize(1000, 220)
+        buttons_layout_main = QGridLayout(buttons_group_main)
 
-        self.make_template_button = QPushButton("Cоздать шаблон")
-        self.make_template_button.setIcon(self.icon.write_icon)
-        # self.make_template_button.clicked.connect(self.make_template) # функция будет реализована в Main.py
+        # 1
+        buttons_group_1 = QGroupBox()
+        buttons_layout_1 = QGridLayout(buttons_group_1)
+
 
         self.line_file_name = QLineEdit()
         self.line_file_name.setStyleSheet('background : #ccc; ')
@@ -86,20 +87,33 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.save_button = QPushButton("Сохранить")
         self.save_button.setIcon(self.icon.save_icon)
         self.save_button.clicked.connect(self.save_as_csv)
-        
-        buttons_layout.addWidget(self.make_template_button, 0, 0, 1, 2)
-        buttons_layout.addWidget(self.line_file_name, 1, 0, 1, 1)
-        buttons_layout.addWidget(self.open_button,    1, 1, 1, 1)
-        buttons_layout.addWidget(self.save_button,    2, 0, 1, 2)
 
+
+        buttons_layout_1.addWidget(self.line_file_name, 1, 0, 1, 1)
+        buttons_layout_1.addWidget(self.open_button,    1, 1, 1, 1)
+        buttons_layout_1.addWidget(self.save_button,    2, 0, 1, 2)
+
+
+        # 2
+        buttons_group_2 = QGroupBox()
+        buttons_layout_2 = QGridLayout(buttons_group_2)
+
+        self.make_template_button = QPushButton("Cоздать шаблон")
+        self.make_template_button.setIcon(self.icon.write_icon)
+        # self.make_template_button.clicked.connect(self.make_template) # функция будет реализована в Main.py
+
+        buttons_layout_2.addWidget(self.make_template_button, 0, 0, 1, 2)
+
+
+        buttons_layout_main.addWidget(buttons_group_1)
+        buttons_layout_main.addWidget(buttons_group_2)
 
         spacerItem = QSpacerItem(20, 40, QSizePolicy.Maximum, QSizePolicy.Expanding)
-        buttons_layout.addItem(spacerItem)
+        buttons_layout_main.addItem(spacerItem)
 
         
-
         wires_layout.addWidget(self.wires_table)
-        wires_layout.addWidget(buttons_group)
+        wires_layout.addWidget(buttons_group_main)
         wires_group.setLayout(wires_layout)
         
         
@@ -131,6 +145,8 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
             item = QTableWidgetItem()
             self.wires_table.setItem(row, 2, item)
         item.setText(text) 
+
+        self.wires_table.resizeColumnToContents(2)
 
 
 
@@ -188,6 +204,8 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
 
             for pin in group:
                 self.set_intersections(pin - 1, group - {pin})
+        
+            table.resizeColumnToContents(2)
 
         finally:
             table.blockSignals(False)

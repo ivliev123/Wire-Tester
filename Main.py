@@ -252,7 +252,7 @@ class MainWindow(QMainWindow):
 
         # table = self.read_wire_group.wires_table
         # table.resizeColumnToContents(2)
-
+        
         self.read_wire_group.wires_table.resizeColumnToContents(2)
 
     # кривое косое чтение но работает

@@ -1,7 +1,9 @@
 from PyQt5.QtWidgets import (
     QWidget, QGroupBox, QLabel, 
     QGridLayout, QTableWidget, QTableWidgetItem,
-    QPushButton, QVBoxLayout, QHBoxLayout, QSpacerItem, QSizePolicy, QHeaderView, QAbstractItemView
+    QPushButton, QVBoxLayout, QHBoxLayout, QSpacerItem, 
+    QSizePolicy, QHeaderView, QAbstractItemView,
+    QLineEdit
 )
 from PyQt5.QtGui import QPixmap, QColor, QIcon, QFont
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -55,37 +57,59 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
         
 
         # Кнопки управления
-        buttons_group = QGroupBox()
-        buttons_group.setMaximumSize(1000, 150)
-        buttons_layout = QGridLayout(buttons_group)
+        buttons_group_main = QGroupBox()
+        buttons_group_main.setMaximumSize(1000, 220)
+        buttons_layout_main = QGridLayout(buttons_group_main)
+
+        # 1
+        buttons_group_1 = QGroupBox()
+        buttons_layout_1 = QGridLayout(buttons_group_1)
+
+        self.line_accord_file = QLineEdit()
+        self.line_accord_file.setStyleSheet('background : #ccc; ')
+        self.line_accord_file.setReadOnly(1)
+        self.line_accord_file.setPlaceholderText("Выберите таблицу соответствия...")
+
+        self.open_button = QPushButton("Открыть")
+        self.open_button.setIcon(self.icon.open_folder_icon)
+        self.open_button.clicked.connect(self.read_accord_file)
+
+        self.save_accord_file_button = QPushButton("Сохранить таблицу соответствия как")
+        self.save_accord_file_button.setIcon(self.icon.save_icon)
+        self.save_accord_file_button.clicked.connect(self.read_accord_file)
+
+        buttons_layout_1.addWidget(self.line_accord_file, 0, 0, 1, 1)
+        buttons_layout_1.addWidget(self.open_button, 0, 1, 1, 1)
+        buttons_layout_1.addWidget(self.save_accord_file_button, 1, 0, 1, 2)
+
+        # 2
+        buttons_group_2 = QGroupBox()
+        buttons_layout_2 = QGridLayout(buttons_group_2)
 
         self.read_button = QPushButton("Прозвонить")
-        # self.read_button.setMinimumSize(self.min_size_x, self.min_size_y)
         self.read_button.setIcon(self.icon.tester_icon)
-        # self.read_button.setIcon(QIcon('icons/tester.png'))
         
-        # self.check_button = QPushButton("На проверку")
-        # self.check_button.setIcon(self.icon.send_icon)
-
         self.edit_button = QPushButton("На редактирование")
         self.edit_button.setIcon(self.icon.send_icon)
 
-
         self.test_test_button = QPushButton("test test")
-        # self.test_test_button.clicked.connect(self.test_test)
-        
+ 
+        buttons_layout_2.addWidget(self.read_button, 0, 0, 1, 1)
+        buttons_layout_2.addWidget(self.edit_button, 1, 0, 1, 1)
+        buttons_layout_2.addWidget(self.test_test_button, 2, 0, 1, 1)
 
-
-        buttons_layout.addWidget(self.read_button, 0, 0, 1, 1)
-        # buttons_layout.addWidget(self.check_button, 1, 0, 1, 1)
-        buttons_layout.addWidget(self.edit_button, 2, 0, 1, 1)
-        buttons_layout.addWidget(self.test_test_button, 3, 0, 1, 1)
+        buttons_layout_main.addWidget(buttons_group_1)
+        buttons_layout_main.addWidget(buttons_group_2)
 
         spacerItem = QSpacerItem(20, 40, QSizePolicy.Maximum, QSizePolicy.Expanding)
-        buttons_layout.addItem(spacerItem)
+        buttons_layout_main.addItem(spacerItem)
 
         wires_layout.addWidget(self.wires_table)
-        wires_layout.addWidget(buttons_group)
+        wires_layout.addWidget(buttons_group_main)
         wires_group.setLayout(wires_layout)
         
         main_layout.addWidget(wires_group)
+
+
+    def read_accord_file(self):
+        print("read_accord_file")
