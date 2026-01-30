@@ -23,8 +23,6 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
     """Виджет для тестирования результатов прозвонки проводов"""
     
     # Сигналы для связи с другими компонентами
-    wire_selected = pyqtSignal(dict)  # Сигнал при выборе провода
-    start_test_requested = pyqtSignal(int)  # Запрос теста для конкретного провода
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -35,6 +33,11 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.min_size_y = 30
 
         self.read_bit_rows = []
+
+        self.t_comand = 0
+        self.accord_data = []
+
+
 
         self.init_ui()
     
@@ -52,6 +55,9 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.wires_table.setHorizontalHeaderLabels([
             "Разъем", "Вывод", "Вывод"
         ])
+        header = self.wires_table.horizontalHeader()
+        header.setDefaultAlignment(Qt.AlignLeft)
+
         self.wires_table.setSelectionBehavior(QTableWidget.SelectRows)
         # self.wires_table.doubleClicked.connect(self.on_wire_double_clicked)
 
@@ -100,7 +106,7 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
 
         self.make_template_button = QPushButton("Cоздать шаблон")
         self.make_template_button.setIcon(self.icon.write_icon)
-        # self.make_template_button.clicked.connect(self.make_template) # функция будет реализована в Main.py
+        self.make_template_button.clicked.connect(self.make_template) # функция будет реализована в Main.py будет тут
 
         buttons_layout_2.addWidget(self.make_template_button, 0, 0, 1, 2)
 
@@ -125,6 +131,10 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
         # self.clear_details()
         # self.update_buttons_state()
 
+
+    # функция для обработки сигнала
+    def process_accord_data(self, accord_data):
+        self.accord_data = accord_data
 
     def parse_intersections(self, text):
         """
@@ -382,3 +392,131 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
                 item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
 
         self.wires_table.resizeColumnToContents(2)
+
+
+    # def make_template(self, t_comand, accord_table_data):
+    #     print(t_comand)
+    
+    # def make_template(self):
+    #     print(self.t_comand)
+    #     print(self.accord_data)
+
+    #     self.fill_table_from_accord_data():
+
+    def make_template(self):
+        """
+        Создание шаблона на основе accord_data
+        """
+        # 1. Проверка команды
+        if self.t_comand == 0:
+            self.InfoWindow = InfoWindow(
+                "Количество плат не указано."
+            )
+            self.InfoWindow.Window.show()
+            return
+
+        # 2. Проверка наличия accord_data
+        if not self.accord_data:
+            self.WarningWindow = WarningWindow(
+                "Отсутствуют данные таблицы соответствия\n"
+                "Загрузите файл соответствий перед созданием шаблона."
+            )
+            self.WarningWindow.Window.show()
+            return
+
+        # # 3. Проверка структуры accord_data
+        # if not isinstance(self.accord_data, list) or not any(self.accord_data):
+        #     self.DangerWindow = DangerWindow(
+        #         "Некорректный формат accord_data.\n"
+        #         "Данные пусты или повреждены."
+        #     )
+        #     self.DangerWindow.Window.show()
+        #     return
+
+        # 4. Попытка заполнить таблицу
+        try:
+            self.wires_table.blockSignals(True)
+
+            self.fill_table_from_accord_data()
+
+            self.wires_table.blockSignals(False)
+
+            self.SuccessWindow = SuccessWindow(
+                "Шаблон успешно создан на основе таблицы соответствий."
+            )
+            self.SuccessWindow.Window.show()
+
+        except Exception as e:
+            self.wires_table.blockSignals(False)
+
+            self.DangerWindow = DangerWindow(
+                f"Ошибка при создании шаблона:\n{str(e)}"
+            )
+            self.DangerWindow.Window.show()
+
+
+
+    # такая же функция, как и в read
+    def fill_table_from_accord_data(self):
+        """Заполнение таблицы данными из файла соответствий (только 2 столбца)"""
+        # Очищаем таблицу
+        self.wires_table.setRowCount(0)
+        
+        if not self.accord_data:
+            return
+        
+        # Если первая строка - заголовки
+        has_headers = True
+        # Проверяем, является ли первая строка заголовками (содержит текст, а не числа)
+        if self.accord_data and len(self.accord_data[0]) > 0:
+            first_cell = self.accord_data[0][0]
+            if first_cell and first_cell.lower() in ["разъем", "socket", "connector", "вывод", "pin"]:
+                has_headers = True
+                headers = self.accord_data[0]
+                data_rows = self.accord_data[1:]
+            else:
+                has_headers = False
+                data_rows = self.accord_data
+        else:
+            has_headers = False
+            data_rows = self.accord_data
+        
+        # Устанавливаем количество строк
+        self.wires_table.setRowCount(len(data_rows))
+        
+        # Устанавливаем заголовки таблицы
+        if has_headers and len(headers) >= 2:
+            # self.wires_table.setHorizontalHeaderLabels([headers[0], headers[1], "Выводы"])
+            self.wires_table.setHorizontalHeaderLabels([
+                "Разъем", "Вывод", "Вывод"
+            ])
+        
+        header = self.wires_table.horizontalHeader()
+        header.setDefaultAlignment(Qt.AlignLeft)
+
+        # Заполняем данные
+        for row_idx, row_data in enumerate(data_rows):
+            # Разъем (столбец 0)
+            if len(row_data) > 0:
+                item_socket = QTableWidgetItem(row_data[0])
+                item_socket.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+                self.wires_table.setItem(row_idx, 0, item_socket)
+            
+            # Вывод (столбец 1)
+            if len(row_data) > 1:
+                item_pin = QTableWidgetItem(row_data[1])
+                item_pin.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+                self.wires_table.setItem(row_idx, 1, item_pin)
+            
+            # Столбец "Соответствующие выводы" оставляем пустым
+            # Пользователь может заполнить его вручную при редактировании
+        
+        # Автоматически подгоняем ширину столбцов
+        self.wires_table.resizeColumnsToContents()
+        
+        # Делаем третий столбец шире
+        header = self.wires_table.horizontalHeader()
+        header.setStretchLastSection(True)
+
+
+

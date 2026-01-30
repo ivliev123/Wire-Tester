@@ -8,19 +8,18 @@ from PyQt5.QtGui import QIcon, QPixmap
 
 from PyQt5.QtCore import Qt
 
+import time
+import os
+import serial
+import serial.tools.list_ports
+import csv
+import configparser
 
 from ReadWireGroup import ReadWireGroup
 from TestWireGroup import TestWireGroup
 from EditWireGroup import EditWireGroup
 
-import time
-import os
-import serial
-import serial.tools.list_ports
-
 from IconModul import icon
-
-import configparser
 
 from MessageWindows import WarningWindow
 from MessageWindows import DangerWindow
@@ -136,9 +135,6 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(connection_box, 0, 1, 1, 3)
 
 
-
-        # от разделения выхлопа особо небыло ...
-
         # Создаем и добавляем наш виджет
         self.read_wire_group = ReadWireGroup()
         self.test_wire_group = TestWireGroup()
@@ -148,6 +144,10 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.test_wire_group, 1, 1, 1, 1)  
         main_layout.addWidget(self.edit_wire_group, 1, 2, 1, 1)  
 
+        # еще сигналы 
+        # Подключаем сигнал
+        self.read_wire_group.accord_data_ready.connect(self.handle_accord_data) 
+
         
         # ===== Сигналы =====
         self.refresh_button.clicked.connect(self.update_ports)
@@ -155,29 +155,26 @@ class MainWindow(QMainWindow):
 
         self.update_ports()
 
+        # обработчик событий в других классах
         # обработки нажатия кнопок нужно создавать тут ...
         self.read_wire_group.read_button.clicked.connect(self.do_read_wire)
         # self.read_wire_group.check_button.clicked.connect(self.to_test_wire)
         self.read_wire_group.edit_button.clicked.connect(self.to_edit_wire)
-
         self.read_wire_group.test_test_button.clicked.connect(self.test_test)
-
-        # обработка событий нажатия ячейки         
-        # Изменение текущей ячейки
-        # self.edit_wire_group.wires_table.currentItemChanged.connect(self.on_current_item_changed)
+        
 
         self.load_command_from_ini()
+        self.load_accord_table()
 
+    def handle_accord_data(self, accord_data):
+        # Передаем список в EditWireGroup
+        self.edit_wire_group.process_accord_data(accord_data)
 
     def do_read_wire(self):
         self.read_wire_write_file() # прозваниваем провод // записываем в файл 
         self.read_bit_rows = self.read_file() # читаем с файла
         self.read_visual(self.read_bit_rows) #отображаем данные в таблице
         self.to_test_wire() # отправляем на проверку
-        
-        # self.test_wire_group.update_data_to_test = 1
-        # self.test_wire_group.to_update_data_to_test()
-        # отображаем информационное окно 
 
         self.InfoWindow = InfoWindow(f"Прозвонка завершена")
         self.InfoWindow.Window.show()
@@ -188,9 +185,6 @@ class MainWindow(QMainWindow):
         self.read_bit_rows = self.read_file()
         self.read_visual(self.read_bit_rows)
         self.to_test_wire() # отправляем на проверку
-
-        # self.test_wire_group.update_data_to_test = 1
-        # self.test_wire_group.to_update_data_to_test()
 
 
 
@@ -209,20 +203,24 @@ class MainWindow(QMainWindow):
             intersections_array.append(intersections)
     
     def to_edit_wire(self):
+        # и тут презаполнять первый столбец
+        self.edit_wire_group.accord_data = self.read_wire_group.accord_data
+        self.edit_wire_group.fill_table_from_accord_data()
+
         self.edit_wire_group.read_bit_rows =  self.read_bit_rows
         self.edit_wire_group.edit_visual(self.read_bit_rows)
 
 
 
-
-
-
-    def read_visual(self, bit_rows):
+    def read_visual(self, bit_rows): # в этой функции нужно внести изменения чтобы не затирались accord_data
 
         intersections_array = []
 
         self.read_wire_group.wires_table.clearContents()
         self.read_wire_group.wires_table.setRowCount(0)
+
+        # и тут презаполнять первый столбец
+        self.read_wire_group.fill_table_from_accord_data()
 
         # при проходе по строкам нужно строку отзеркалить
         for row_index, row in enumerate(bit_rows):
@@ -235,7 +233,6 @@ class MainWindow(QMainWindow):
         print(intersections_array)
 
         # далее реализовать таблицу в блоке read
-
         wire_points = len(intersections_array)
         self.read_wire_group.wires_table.setRowCount(wire_points)
 
@@ -249,11 +246,8 @@ class MainWindow(QMainWindow):
 
             self.read_wire_group.wires_table.setItem(point_i, 2, QTableWidgetItem(intersections_text))
 
-
-        # table = self.read_wire_group.wires_table
-        # table.resizeColumnToContents(2)
-        
         self.read_wire_group.wires_table.resizeColumnToContents(2)
+
 
     # кривое косое чтение но работает
     def read_wire_write_file(self):
@@ -297,14 +291,6 @@ class MainWindow(QMainWindow):
             
             # Также сохраняем текстовую версию (опционально)
             txt_filename = f"arduino_bin_data/response_.txt"
-            # with open(txt_filename, 'w', encoding='utf-8') as f:
-
-            #     # Пробуем декодировать как текст
-            #     try:
-            #         f.write(bytes_to_bin(all_response_bytes))
-                    
-            #     except:
-            #         f.write("(бинарные данные, не удалось декодировать как текст)")
             with open(txt_filename, 'w', encoding='utf-8') as f:
                 try:
                     # все биты одной строкой
@@ -397,6 +383,35 @@ class MainWindow(QMainWindow):
         time.sleep(2)
 
 
+    def load_accord_table(self):
+        if not self.accord_table_file_name:
+            return
+
+        if not os.path.exists(self.accord_table_file_name):
+            print("Файл соответствий не найден")
+            return
+
+        accord_data = []
+
+        with open(self.accord_table_file_name, "r", encoding="utf-8-sig", newline="") as f:
+            reader = csv.reader(f, delimiter=";")
+            for row in reader:
+                if len(row) >= 2:
+                    accord_data.append([row[0].strip(), row[1].strip()])
+                elif len(row) == 1:
+                    accord_data.append([row[0].strip(), ""])
+                else:
+                    accord_data.append(["", ""])
+
+        # 🔥 ПЕРЕДАЁМ В ReadWireGroup
+        # self.read_wire_group.set_accord_data(accord_data)
+
+        self.read_wire_group.accord_data = accord_data
+        self.read_wire_group.line_accord_file.setText(os.path.basename(self.accord_table_file_name))
+        self.read_wire_group.fill_table_from_accord_data()
+
+        # обновляем данные для других блоков 
+        self.edit_wire_group.accord_data = accord_data
 
 
     def load_command_from_ini(self):
@@ -405,22 +420,31 @@ class MainWindow(QMainWindow):
         config = configparser.ConfigParser()
 
         if not os.path.exists("settings.ini"):
-            # если ini нет — создаем с дефолтными значениями
             config["COMMAND"] = {
                 "command": COMMAND,
-                "t_comand": str(t_comand)
+                "t_comand": str(t_comand),
+                "accord_table_file_name": ""
             }
-            with open("settings.ini", "w") as f:
+            with open("settings.ini", "w", encoding="utf-8") as f:
                 config.write(f)
             return
 
-        config.read("settings.ini")
+        config.read("settings.ini", encoding="utf-8")
 
         COMMAND = config.get("COMMAND", "command", fallback="t01")
         t_comand = config.getint("COMMAND", "t_comand", fallback=1)
 
-        # показываем в поле ввода
+        self.accord_table_file_name = config.get(
+            "COMMAND",
+            "accord_table_file_name",
+            fallback=""
+        )
+
         self.comand_setup_line_edit.setText(str(t_comand))
+        
+        # обновляем данные для других блоков 
+        self.edit_wire_group.t_comand = t_comand # нужно в сигнал...
+
 
 
     def save_command_to_ini(self):
@@ -431,14 +455,12 @@ class MainWindow(QMainWindow):
             "command": COMMAND,
             "t_comand": str(t_comand)
         }
-
         with open("settings.ini", "w") as f:
             config.write(f)
 
 
     def set_command(self):
         global COMMAND, t_comand
-
         text = self.comand_setup_line_edit.text().strip()
 
         if not text.isdigit() or int(text) <= 0:
@@ -453,7 +475,6 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(
             f"Установлена команда {COMMAND}, плат: {t_comand}"
         )
-
 
 
 

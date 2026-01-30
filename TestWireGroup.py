@@ -24,8 +24,6 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
     """Виджет для тестирования результатов прозвонки проводов"""
     
     # Сигналы для связи с другими компонентами
-    wire_selected = pyqtSignal(dict)  # Сигнал при выборе провода
-    start_test_requested = pyqtSignal(int)  # Запрос теста для конкретного провода
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -63,9 +61,13 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.wires_table.setHorizontalHeaderLabels([
             "Разъем", "Вывод", "Вывод"
         ])
-
+        header = self.wires_table.horizontalHeader()
+        header.setDefaultAlignment(Qt.AlignLeft)
+        
         self.wires_table.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
         self.wires_table.setSelectionBehavior(QTableWidget.SelectRows)
+
+
 
         # сортировка
         # self.wires_table.setSortingEnabled(True)
@@ -74,7 +76,6 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
 
         # self.wires_table.doubleClicked.connect(self.on_wire_double_clicked)
         
-
 
         # Кнопки управления
         buttons_group_main = QGroupBox()
@@ -136,28 +137,6 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
 
 
         main_layout.addWidget(wires_group)
-
-    
-
-    # def to_update_data_to_test(self):
-
-    #     border_radius = 14
-    #     btn_color_secondary = "6C757D"
-    #     btn_color_success = "28A745"
-    #     btn_color_warning = "FFC107"
-    #     btn_color_danger  = "DC3545"
-
-    #     if self.update_data_to_test == 0:
-    #         self.update_data_to_test_text = "Данные прозвонки отсутствуют"
-    #         self.test_status_button.setIcon(QIcon(self.icon.error_icon))
-    #         color = btn_color_secondary
-    #     if self.update_data_to_test == 1:
-    #         self.update_data_to_test_text = "Данные прозвонки обновлены"
-    #         self.test_status_button.setIcon(QIcon(self.icon.check_mark_icon))
-    #         color = btn_color_success
-
-    #     self.test_status_label.setText(self.update_data_to_test_text)
-    #     self.test_status_button.setStyleSheet(f"background-color: #{color}; border-radius: {border_radius}px;")        
 
 
 
