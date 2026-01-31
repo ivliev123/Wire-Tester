@@ -11,7 +11,8 @@ from PyQt5.QtCore import Qt, pyqtSignal
 import csv
 import os
 
-from IconModul import icon
+from SystemModul import icon
+from SystemModul import Constants 
 
 from MessageWindows import WarningWindow
 from MessageWindows import DangerWindow
@@ -22,24 +23,27 @@ from MessageWindows import InfoWindow
 
 class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
     """Виджет для тестирования результатов прозвонки проводов"""
-    
+
     # Сигналы для связи с другими компонентами
     
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        self.const = Constants()
         self.icon = icon()
 
         self.min_size_x = 30 
         self.min_size_y = 30
 
         self.read_bit_rows = []
-
         self.wire_data_from_file = []
 
         # 
         self.update_data_to_test = 0
         self.update_data_to_test_text = ""
+
+        self.accord_data = []
+
 
         self.init_ui()
 
@@ -51,31 +55,21 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         # Основной layout
         main_layout = QVBoxLayout(self)
         
-        # 1. Группа с таблицей проводов (верхняя часть)
-        wires_group = QGroupBox("Проверка провода")
+        wires_group = QGroupBox(self.const.TEST_TABLE_GROUP_TITLE)
         wires_layout = QVBoxLayout()
         
         # Таблица для отображения проводов
         self.wires_table = QTableWidget()
         self.wires_table.setColumnCount(3)
-        self.wires_table.setHorizontalHeaderLabels([
-            "Разъем", "Вывод", "Вывод"
-        ])
+        self.wires_table.setHorizontalHeaderLabels(
+            self.const.TABLE_HEADERS["wire_test"]
+        )
         header = self.wires_table.horizontalHeader()
         header.setDefaultAlignment(Qt.AlignLeft)
         
         self.wires_table.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
         self.wires_table.setSelectionBehavior(QTableWidget.SelectRows)
 
-
-
-        # сортировка
-        # self.wires_table.setSortingEnabled(True)
-        # # Если нужно настроить сортировку по умолчанию:
-        # self.wires_table.sortByColumn(0, Qt.AscendingOrder)  # Сортировка по первому столбцу
-
-        # self.wires_table.doubleClicked.connect(self.on_wire_double_clicked)
-        
 
         # Кнопки управления
         buttons_group_main = QGroupBox()
@@ -86,21 +80,20 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         buttons_group_1 = QGroupBox()
         buttons_layout_1 = QGridLayout(buttons_group_1)
 
-
         self.line_test_file = QLineEdit()
         self.line_test_file.setStyleSheet('background : #ccc; ')
         self.line_test_file.setReadOnly(1)
-        self.line_test_file.setPlaceholderText("Выберите файл для тестирования...")
+        self.line_test_file.setPlaceholderText(self.const.PLACEHOLDER_TEXTS["test_file_select"])
 
-        self.open_button = QPushButton("Открыть")
+        self.open_button = QPushButton(self.const.BUTTON_TEXTS["open"])
         self.open_button.setIcon(self.icon.open_folder_icon)
         self.open_button.clicked.connect(self.read_from_csv)
         
-        self.check_button = QPushButton("Проверка")
+        self.check_button = QPushButton(self.const.BUTTON_TEXTS["check"])
         self.check_button.setIcon(self.icon.search_icon)
         self.check_button.clicked.connect(self.do_check)
 
-        self.save_button = QPushButton("Сохранить результаты проверки")
+        self.save_button = QPushButton(self.const.BUTTON_TEXTS["save_check_result"])
         self.save_button.setIcon(self.icon.save_icon)
         self.save_button.clicked.connect(self.save_check_result)
 
@@ -113,11 +106,11 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         check_box_group = QGroupBox()
         check_box_layout = QGridLayout(check_box_group)
 
-        self.check_box_num =  QCheckBox('Номер вывода', self)
+        self.check_box_num =  QCheckBox(self.const.BUTTON_TEXTS["num_pin"], self)
         self.check_box_num.toggle()
         self.check_box_num.stateChanged.connect(self.update_buttons_text)
 
-        self.check_box_name = QCheckBox('Наименование разъема(вывода)', self)
+        self.check_box_name = QCheckBox(self.const.BUTTON_TEXTS["socket_name"], self)
         self.check_box_name.toggle()
         self.check_box_name.stateChanged.connect(self.update_buttons_text)
 
@@ -135,14 +128,78 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         wires_layout.addWidget(buttons_group_main)
         wires_group.setLayout(wires_layout)
 
-
         main_layout.addWidget(wires_group)
+
+
+    # функция для обработки сигнала
+    def process_accord_data(self, accord_data):
+        self.accord_data = accord_data
+
+# тут она скорей всего не потребуется 
+    # # такая же функция, как и в read
+    # def fill_table_from_accord_data(self):
+    #     """Заполнение таблицы данными из файла соответствий (только 2 столбца)"""
+    #     # Очищаем таблицу
+    #     self.wires_table.setRowCount(0)
+        
+    #     if not self.accord_data:
+    #         return
+        
+    #     # Если первая строка - заголовки
+    #     has_headers = True
+    #     # Проверяем, является ли первая строка заголовками (содержит текст, а не числа)
+    #     if self.accord_data and len(self.accord_data[0]) > 0:
+    #         first_cell = self.accord_data[0][0]
+    #         if first_cell and first_cell.lower() in ["разъем", "socket", "connector", "вывод", "pin"]:
+    #             has_headers = True
+    #             headers = self.accord_data[0]
+    #             data_rows = self.accord_data[1:]
+    #         else:
+    #             has_headers = False
+    #             data_rows = self.accord_data
+    #     else:
+    #         has_headers = False
+    #         data_rows = self.accord_data
+        
+    #     # Устанавливаем количество строк
+    #     self.wires_table.setRowCount(len(data_rows))
+        
+    #     # Устанавливаем заголовки таблицы
+    #     if has_headers and len(headers) >= 2:
+    #         # self.wires_table.setHorizontalHeaderLabels([headers[0], headers[1], "Выводы"])
+    #         self.wires_table.setHorizontalHeaderLabels([
+    #             "Разъем", "Вывод", "Вывод"
+    #         ])
+        
+    #     header = self.wires_table.horizontalHeader()
+    #     header.setDefaultAlignment(Qt.AlignLeft)
+
+    #     # Заполняем данные
+    #     for row_idx, row_data in enumerate(data_rows):
+    #         # Разъем (столбец 0)
+    #         if len(row_data) > 0:
+    #             item_socket = QTableWidgetItem(row_data[0])
+    #             item_socket.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+    #             self.wires_table.setItem(row_idx, 0, item_socket)
+            
+    #         # Вывод (столбец 1)
+    #         if len(row_data) > 1:
+    #             item_pin = QTableWidgetItem(row_data[1])
+    #             item_pin.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+    #             self.wires_table.setItem(row_idx, 1, item_pin)
+            
+    #     # Автоматически подгоняем ширину столбцов
+    #     self.wires_table.resizeColumnsToContents()
+        
+    #     # Делаем третий столбец шире
+    #     header = self.wires_table.horizontalHeader()
+    #     header.setStretchLastSection(True)
 
 
 
 
     def read_from_csv(self):
-        start_dir = "wire_list/"
+        start_dir = self.const.DIRECTORIES["wire_dataset"]
 
         file_path, _ = QFileDialog.getOpenFileName(
             self,
@@ -160,7 +217,6 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
                 rows = list(reader)
 
             if not rows:
-                # QMessageBox.warning(self, "Ошибка", "Файл пуст")
                 self.WarningWindow  = WarningWindow("Ошибка. Файл пуст")
                 self.WarningWindow.Window.show()
                 return
@@ -173,11 +229,6 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
 
             # Проверяем количество столбцов
             if len(headers) != self.wires_table.columnCount():
-                # QMessageBox.warning(
-                #     self,
-                #     "Ошибка",
-                #     "Неверный формат файла (не совпадает количество столбцов)"
-                # )
                 self.DangerWindow = DangerWindow("Ошибка. Неверный формат файла (не совпадает количество столбцов)")
                 self.DangerWindow.Window.show()
                 return
@@ -189,11 +240,6 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
             # Загружаем данные в таблицу
             self.line_test_file.setText(os.path.basename(file_path))
 
-            # QMessageBox.information(
-            #     self,
-            #     "Информация",
-            #     f"Файл {os.path.basename(file_path)} успешно загружен"
-            # )
             self.InfoWindow = InfoWindow(f"Файл {os.path.basename(file_path)} успешно загружен")
             self.InfoWindow.Window.show()
 
@@ -269,18 +315,17 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         # ---------- обработка строк ----------
         for i, intersections in enumerate(intersections_array):
 
-            
-            item_soket = QTableWidgetItem(str(self.wire_data_from_file[i][0]))
-            item_soket.setTextAlignment(Qt.AlignLeft)
-            table.setItem(i, 0, item_soket)
+            # item_socket = QTableWidgetItem(str(self.wire_data_from_file[i][0]))
+            item_socket = QTableWidgetItem(str(self.accord_data[i+1][0]))
+            item_socket.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+            table.setItem(i, 0, item_socket)
 
             pin = i + 1
 
             # --- номер вывода ---
-            item = QTableWidgetItem(str(pin))
-            # item.setTextAlignment(Qt.AlignCenter)
-            item.setTextAlignment(Qt.AlignLeft)
-            table.setItem(i, 1, item)
+            item_pin = QTableWidgetItem(str(pin))
+            item_pin.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+            table.setItem(i, 1, item_pin)
 
             # ---------- ФАКТ ----------
             fact = {j + 1 for j in intersections}
@@ -324,8 +369,8 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
                     color = btn_color_warning     # 🟡 ожидали, но нет
 
                 # вот здесь менять текст в зависимости от check_box
-
-                soket_pin_name = self.wire_data_from_file[other_pin - 1][0]
+                # soket_pin_name = self.wire_data_from_file[other_pin - 1][0] # Было из файла
+                soket_pin_name = self.accord_data[other_pin][0] # будет из таблицы соответствий
                 btn_text = self.make_btn_text(other_pin, soket_pin_name)
 
                 btn = QPushButton(btn_text)
@@ -353,25 +398,38 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
         # ---------- применяем ширину ----------
         table.resizeColumnToContents(2)
 
+        self.const.ok = total_ok
+        self.const.warning = total_warning
+        self.const.error = total_error
+
         # ---------- итоговая оценка ----------
         if total_error > 0:
             self.DangerWindow = DangerWindow(
-                f"Обнаружены критические ошибки!\n"
-                f"OK: {total_ok}, WARNING: {total_warning}, ERROR: {total_error}"
+                self.const.MESSAGES["error_check_result"].format(
+                    ok=total_ok,
+                    warning=total_warning,
+                    error=total_error
+                )
             )
             self.DangerWindow.Window.show()
 
         elif total_warning > 0:
             self.WarningWindow = WarningWindow(
-                f"Есть отклонения.\n"
-                f"OK: {total_ok}, WARNING: {total_warning}"
+                self.const.MESSAGES["warning_check_result"].format(
+                    ok=total_ok,
+                    warning=total_warning,
+                    error=total_error
+                )
             )
             self.WarningWindow.Window.show()
 
         else:
             self.SuccessWindow = SuccessWindow(
-                f"Проверка успешна.\n"
-                f"Все соединения корректны ({total_ok})"
+                self.const.MESSAGES["success_check_result"].format(
+                    ok=total_ok,
+                    warning=total_warning,
+                    error=total_error
+                )
             )
             self.SuccessWindow.Window.show()
 
@@ -414,7 +472,8 @@ class TestWireGroup(QWidget):  # QWidget вместо QMainWindow
             error_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")  # Красный
 
             # ---------- Заголовки ----------
-            headers = ["№", "Разъём", "Вывод", "OK", "WARNING", "ERROR"]
+            # headers = ["№", "Разъём", "Вывод", "OK", "WARNING", "ERROR"]
+            headers = self.const.EXCEL_HEADERS
             ws.append(headers)
             
             # Стилизация заголовков

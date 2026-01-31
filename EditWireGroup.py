@@ -10,7 +10,8 @@ from PyQt5.QtCore import Qt, pyqtSignal
 import csv
 import os
 
-from IconModul import icon
+from SystemModul import icon
+from SystemModul import Constants 
 
 from MessageWindows import WarningWindow
 from MessageWindows import DangerWindow
@@ -27,6 +28,7 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        self.const = Constants()
         self.icon = icon()
 
         self.min_size_x = 30 
@@ -45,16 +47,15 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
         # Основной layout
         main_layout = QVBoxLayout(self)
         
-        # 1. Группа с таблицей проводов (верхняя часть)
-        wires_group = QGroupBox("Редактирование провода")
+        wires_group = QGroupBox(self.const.EDIT_TABLE_GROUP_TITLE)
         wires_layout = QVBoxLayout()
         
         # Таблица для отображения проводов
         self.wires_table = QTableWidget()
         self.wires_table.setColumnCount(3)
-        self.wires_table.setHorizontalHeaderLabels([
-            "Разъем", "Вывод", "Вывод"
-        ])
+        self.wires_table.setHorizontalHeaderLabels(
+            self.const.TABLE_HEADERS["wire_test"]
+        )
         header = self.wires_table.horizontalHeader()
         header.setDefaultAlignment(Qt.AlignLeft)
 
@@ -85,12 +86,14 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.line_file_name = QLineEdit()
         self.line_file_name.setStyleSheet('background : #ccc; ')
         self.line_file_name.setReadOnly(1)
+        self.line_file_name.setPlaceholderText(self.const.PLACEHOLDER_TEXTS["edit_file_select"])
 
-        self.open_button = QPushButton("Открыть")
+
+        self.open_button = QPushButton(self.const.BUTTON_TEXTS["open"])
         self.open_button.setIcon(self.icon.open_folder_icon)
         self.open_button.clicked.connect(self.read_from_csv)
 
-        self.save_button = QPushButton("Сохранить")
+        self.save_button = QPushButton(self.const.BUTTON_TEXTS["save"])
         self.save_button.setIcon(self.icon.save_icon)
         self.save_button.clicked.connect(self.save_as_csv)
 
@@ -122,14 +125,7 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
         wires_layout.addWidget(buttons_group_main)
         wires_group.setLayout(wires_layout)
         
-        
-        # Добавляем обе группы в основной layout
         main_layout.addWidget(wires_group)
-        # main_layout.addWidget(details_group)
-        
-        # Инициализация состояния
-        # self.clear_details()
-        # self.update_buttons_state()
 
 
     # функция для обработки сигнала
@@ -224,7 +220,7 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
     # механизм созранения и чтения из файла сделаем тут 
     def save_as_csv(self):
 
-        start_dir = "wire_list/"
+        start_dir = self.const.DIRECTORIES["wire_dataset"]
 
         file_path, _ = QFileDialog.getSaveFileName(
             self,
@@ -287,7 +283,7 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
 
 
     def read_from_csv(self):
-        start_dir = "wire_list/"
+        start_dir = self.const.DIRECTORIES["wire_dataset"]
 
         file_path, _ = QFileDialog.getOpenFileName(
             self,
@@ -360,6 +356,9 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.wires_table.clearContents()
         self.wires_table.setRowCount(0)
 
+        # и тут презаполнять первый столбец
+        self.fill_table_from_accord_data()
+
         # при проходе по строкам нужно строку отзеркалить
         for row_index, row in enumerate(bit_rows):
             # 1. зеркалим строку
@@ -394,15 +393,6 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.wires_table.resizeColumnToContents(2)
 
 
-    # def make_template(self, t_comand, accord_table_data):
-    #     print(t_comand)
-    
-    # def make_template(self):
-    #     print(self.t_comand)
-    #     print(self.accord_data)
-
-    #     self.fill_table_from_accord_data():
-
     def make_template(self):
         """
         Создание шаблона на основе accord_data
@@ -424,14 +414,6 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
             self.WarningWindow.Window.show()
             return
 
-        # # 3. Проверка структуры accord_data
-        # if not isinstance(self.accord_data, list) or not any(self.accord_data):
-        #     self.DangerWindow = DangerWindow(
-        #         "Некорректный формат accord_data.\n"
-        #         "Данные пусты или повреждены."
-        #     )
-        #     self.DangerWindow.Window.show()
-        #     return
 
         # 4. Попытка заполнить таблицу
         try:
@@ -508,9 +490,6 @@ class EditWireGroup(QWidget):  # QWidget вместо QMainWindow
                 item_pin.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
                 self.wires_table.setItem(row_idx, 1, item_pin)
             
-            # Столбец "Соответствующие выводы" оставляем пустым
-            # Пользователь может заполнить его вручную при редактировании
-        
         # Автоматически подгоняем ширину столбцов
         self.wires_table.resizeColumnsToContents()
         

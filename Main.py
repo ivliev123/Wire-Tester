@@ -19,7 +19,7 @@ from ReadWireGroup import ReadWireGroup
 from TestWireGroup import TestWireGroup
 from EditWireGroup import EditWireGroup
 
-from IconModul import icon
+from SystemModul import icon
 
 from MessageWindows import WarningWindow
 from MessageWindows import DangerWindow
@@ -84,7 +84,22 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.read_bit_rows = []
+        self.icon = icon()
+
+        self.init_ui()
+
+        self.load_command_from_ini()
+
+        self.read_bit_rows = [[] for _ in range(32 * t_comand)] # делаем его не пустым потому как возникают проблемы в edit
+        # заглушки чтоб использовать пустышки 
+        self.read_wire_group.read_bit_rows =  self.read_bit_rows
+        self.test_wire_group.read_bit_rows =  self.read_bit_rows
+        self.edit_wire_group.read_bit_rows =  self.read_bit_rows 
+
+        self.load_accord_table()
+    
+
+    def init_ui(self):
 
         self.setWindowTitle("Тестер проводов")
         self.resize(1600, 800)
@@ -93,8 +108,6 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
         main_layout = QGridLayout(central)
         
-        self.icon = icon()
-
         # Команда / количество плат
         comand_box = QGroupBox("Команда / количество плат")
         comand_layout = QGridLayout()
@@ -107,8 +120,6 @@ class MainWindow(QMainWindow):
         comand_layout.addWidget(self.comand_setup_line_edit, 0, 0)
         comand_layout.addWidget(self.comand_setup_button, 0, 1)
 
-
-
         # SERIAL
         self.serial_manager = SerialManager()
         # ===== Панель подключения =====
@@ -120,17 +131,14 @@ class MainWindow(QMainWindow):
         self.connect_button = QPushButton("Подключиться")
         self.connect_button.setIcon(self.icon.usb_icon)
 
-
         conn_layout.addWidget(QLabel("COM порт:"), 0, 0)
         conn_layout.addWidget(self.port_combo, 0, 1)
         conn_layout.addWidget(self.refresh_button, 0, 2)
         conn_layout.addWidget(self.connect_button, 0, 3)
 
 
-
         comand_box.setLayout(comand_layout)
         main_layout.addWidget(comand_box, 0, 0, 1, 1)
-
         connection_box.setLayout(conn_layout)
         main_layout.addWidget(connection_box, 0, 1, 1, 3)
 
@@ -148,7 +156,6 @@ class MainWindow(QMainWindow):
         # Подключаем сигнал
         self.read_wire_group.accord_data_ready.connect(self.handle_accord_data) 
 
-        
         # ===== Сигналы =====
         self.refresh_button.clicked.connect(self.update_ports)
         self.connect_button.clicked.connect(self.connect_device)
@@ -158,17 +165,15 @@ class MainWindow(QMainWindow):
         # обработчик событий в других классах
         # обработки нажатия кнопок нужно создавать тут ...
         self.read_wire_group.read_button.clicked.connect(self.do_read_wire)
-        # self.read_wire_group.check_button.clicked.connect(self.to_test_wire)
         self.read_wire_group.edit_button.clicked.connect(self.to_edit_wire)
         self.read_wire_group.test_test_button.clicked.connect(self.test_test)
         
 
-        self.load_command_from_ini()
-        self.load_accord_table()
-
     def handle_accord_data(self, accord_data):
         # Передаем список в EditWireGroup
         self.edit_wire_group.process_accord_data(accord_data)
+        self.test_wire_group.process_accord_data(accord_data)
+
 
     def do_read_wire(self):
         self.read_wire_write_file() # прозваниваем провод // записываем в файл 
@@ -207,6 +212,7 @@ class MainWindow(QMainWindow):
         self.edit_wire_group.accord_data = self.read_wire_group.accord_data
         self.edit_wire_group.fill_table_from_accord_data()
 
+        # self.read_bit_rows = (32 * t_comand) * []
         self.edit_wire_group.read_bit_rows =  self.read_bit_rows
         self.edit_wire_group.edit_visual(self.read_bit_rows)
 
@@ -230,7 +236,7 @@ class MainWindow(QMainWindow):
             intersections = [i for i in zero_indexes if i != row_index]
             # print(intersections)
             intersections_array.append(intersections)
-        print(intersections_array)
+        # print(intersections_array)
 
         # далее реализовать таблицу в блоке read
         wire_points = len(intersections_array)
@@ -411,6 +417,7 @@ class MainWindow(QMainWindow):
         self.read_wire_group.fill_table_from_accord_data()
 
         # обновляем данные для других блоков 
+        self.test_wire_group.accord_data = accord_data
         self.edit_wire_group.accord_data = accord_data
 
 

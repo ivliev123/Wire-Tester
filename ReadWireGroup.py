@@ -12,7 +12,8 @@ import os
 import csv
 import configparser
 
-from IconModul import icon
+from SystemModul import icon
+from SystemModul import Constants 
 
 
 class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
@@ -24,6 +25,7 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        self.const = Constants()
         self.icon = icon()
 
         self.min_size_x = 30 
@@ -31,6 +33,7 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
 
         self.read_bit_rows = [] # тут наверное немного лишнее
         self.is_editing_mode = True
+        self.accord_file_path = self.const.DIRECTORIES["accod_table_dataset"]
         self.accord_table_file_name = ""
 
         self.init_ui()
@@ -39,17 +42,16 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
         # Основной layout
         main_layout = QVBoxLayout(self)
         
-        # 1. Группа с таблицей проводов (верхняя часть)
-        wires_group = QGroupBox("Прозвонка провода")
+        wires_group = QGroupBox(self.const.READ_TABLE_GROUP_TITLE)
         wires_layout = QVBoxLayout()
         
         # Таблица для отображения проводов
         self.wires_table = QTableWidget()
         # self.wires_table.setEditTriggers(QTableWidget.NoEditTriggers) 
         self.wires_table.setColumnCount(3)
-        self.wires_table.setHorizontalHeaderLabels([
-            "Разъем", "Вывод", "Вывод"
-        ])
+        self.wires_table.setHorizontalHeaderLabels(
+            self.const.TABLE_HEADERS["wire_test"]
+        )
         header = self.wires_table.horizontalHeader()
         header.setDefaultAlignment(Qt.AlignLeft)
 
@@ -76,13 +78,13 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
         self.line_accord_file = QLineEdit()
         self.line_accord_file.setStyleSheet('background : #ccc; ')
         self.line_accord_file.setReadOnly(1)
-        self.line_accord_file.setPlaceholderText("Выберите таблицу соответствия...")
+        self.line_accord_file.setPlaceholderText(self.const.PLACEHOLDER_TEXTS["read_file_select"])
 
-        self.open_button = QPushButton("Открыть")
+        self.open_button = QPushButton(self.const.BUTTON_TEXTS["open"])
         self.open_button.setIcon(self.icon.open_folder_icon)
         self.open_button.clicked.connect(self.read_accord_file)
 
-        self.save_accord_file_button = QPushButton("Сохранить таблицу соответствия как")
+        self.save_accord_file_button = QPushButton(self.const.BUTTON_TEXTS["save_accord_table"])
         self.save_accord_file_button.setIcon(self.icon.save_icon)
         self.save_accord_file_button.clicked.connect(self.save_accord_file_as)
 
@@ -94,11 +96,12 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
         buttons_group_2 = QGroupBox()
         buttons_layout_2 = QGridLayout(buttons_group_2)
 
-        self.read_button = QPushButton("Прозвонить")
+        self.read_button = QPushButton(self.const.BUTTON_TEXTS["read"])
         self.read_button.setIcon(self.icon.tester_icon)
         
-        self.edit_button = QPushButton("На редактирование")
+        self.edit_button = QPushButton(self.const.BUTTON_TEXTS["to_edit"])
         self.edit_button.setIcon(self.icon.send_icon)
+
 
         self.test_test_button = QPushButton("test test")
  
@@ -119,18 +122,7 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
         main_layout.addWidget(wires_group)
 
 
-    # def save_accord_file_to_ini(self):
-    #     config = configparser.ConfigParser()
-    #     config.read("settings.ini", encoding="utf-8")
 
-    #     if "COMMAND" not in config:
-    #         config["COMMAND"] = {}
-
-    #     config["COMMAND"]["accord_table_file_name"] = self.accord_table_file_name
-
-    #     with open("settings.ini", "w", encoding="utf-8") as f:
-    #         config.write(f)
-    
     def save_accord_file_to_ini(self):
         config = configparser.ConfigParser()
         config.read("settings.ini", encoding="utf-8")
@@ -150,7 +142,7 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
 
     def read_accord_file(self):
         """Чтение файла соответствий из CSV (только первые 2 столбца)"""
-        start_dir = "accord_tables/"
+        start_dir = self.const.DIRECTORIES["accod_table_dataset"]
         
         # Создаем директорию если ее нет
         if not os.path.exists(start_dir):
@@ -222,6 +214,8 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
 
 
 
+
+
     def fill_table_from_accord_data(self):
         """Заполнение таблицы данными из файла соответствий (только 2 столбца)"""
         # Очищаем таблицу
@@ -272,9 +266,6 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
                 item_pin = QTableWidgetItem(row_data[1])
                 item_pin.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
                 self.wires_table.setItem(row_idx, 1, item_pin)
-            
-            # Столбец "Соответствующие выводы" оставляем пустым
-            # Пользователь может заполнить его вручную при редактировании
         
         # Автоматически подгоняем ширину столбцов
         self.wires_table.resizeColumnsToContents()
@@ -318,7 +309,7 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
             default_dir = os.path.dirname(self.accord_file_path)
             default_name = os.path.basename(self.accord_file_path)
         else:
-            default_dir = "accord_tables/"
+            default_dir = self.const.DIRECTORIES["accod_table_dataset"]
             default_name = "table_accord.csv"
         
         file_path, _ = QFileDialog.getSaveFileName(
@@ -370,4 +361,6 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
     def save_accord_file_as(self):
         """Сохранение таблицы соответствий как нового файла"""
         self.save_accord_file()
-
+        self.update_accord_data_from_table()
+        self.accord_data_ready.emit(self.accord_data)
+        
