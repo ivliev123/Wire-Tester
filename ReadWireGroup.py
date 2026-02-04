@@ -33,6 +33,7 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
 
         self.read_bit_rows = [] # тут наверное немного лишнее
         self.is_editing_mode = True
+        self.accord_data = []
         self.accord_file_path = self.const.DIRECTORIES["accod_table_dataset"]
         self.accord_table_file_name = ""
 

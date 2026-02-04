@@ -2,11 +2,12 @@ import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget,
     QGridLayout, QGroupBox, QPushButton,
-    QVBoxLayout, QLabel, QComboBox, QTableWidgetItem, QLineEdit
+    QVBoxLayout, QLabel, QComboBox, QTableWidgetItem, QLineEdit,
+    QDialog, QProgressBar
 )
 from PyQt5.QtGui import QIcon, QPixmap
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
 
 import time
 import os
@@ -43,6 +44,82 @@ def bytes_to_hex(data, cols=16):
 
 def bytes_to_bin(data):
     return ' '.join(f'{b:08b}' for b in data)
+
+
+
+
+class ReadWireWorker(QThread):
+    progress = pyqtSignal(int)
+    finished = pyqtSignal()
+    error = pyqtSignal(str)
+
+    def __init__(self, serial_manager, command, parent=None):
+        super().__init__(parent)
+        self.serial_manager = serial_manager
+        self.command = command
+        self._running = True
+
+    def run(self):
+        try:
+            ser = self.serial_manager.serial
+            if not ser:
+                self.error.emit("Нет подключения к устройству")
+                return
+
+            # 1. очистка
+            time.sleep(0.5)
+            ser.read_all()
+
+            # 2. отправка команды
+            ser.write((self.command + '\n').encode())
+            self.progress.emit(10)
+
+            all_response_bytes = b""
+            start = time.time()
+
+            while time.time() - start < 3:
+                if not self._running:
+                    return
+
+                if ser.in_waiting > 0:
+                    all_response_bytes += ser.read(ser.in_waiting)
+                    start = time.time()
+
+                self.progress.emit(10 + int((time.time() % 3) / 3 * 80))
+
+            # 3. сохранение
+            os.makedirs("arduino_bin_data", exist_ok=True)
+            with open("arduino_bin_data/response_.bin", "wb") as f:
+                f.write(all_response_bytes)
+
+            self.progress.emit(100)
+            self.finished.emit()
+
+        except Exception as e:
+            self.error.emit(str(e))
+
+    def stop(self):
+        self._running = False
+
+
+class ReadProgressDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Прозвонка")
+        self.setModal(True)
+        self.setFixedSize(300, 120)
+
+        layout = QVBoxLayout(self)
+        self.label = QLabel("Идёт прозвонка...")
+        self.bar = QProgressBar()
+        self.bar.setRange(0, 100)
+
+        layout.addWidget(self.label)
+        layout.addWidget(self.bar)
+
+    def set_progress(self, value):
+        self.bar.setValue(value)
+
 
 
 class SerialManager:
@@ -175,17 +252,44 @@ class MainWindow(QMainWindow):
         self.test_wire_group.process_accord_data(accord_data)
 
 
+    # def do_read_wire(self):
+    #     self.read_wire_write_file() # прозваниваем провод // записываем в файл 
+    #     self.read_bit_rows = self.read_file() # читаем с файла
+    #     self.read_visual(self.read_bit_rows) #отображаем данные в таблице
+    #     self.to_test_wire() # отправляем на проверку
+
+    #     self.InfoWindow = InfoWindow(f"Прозвонка завершена")
+    #     self.InfoWindow.Window.show()
     def do_read_wire(self):
-        self.read_wire_write_file() # прозваниваем провод // записываем в файл 
-        self.read_bit_rows = self.read_file() # читаем с файла
-        self.read_visual(self.read_bit_rows) #отображаем данные в таблице
-        self.to_test_wire() # отправляем на проверку
+        self.progress_dialog = ReadProgressDialog(self)
+        self.progress_dialog.show()
 
-        self.InfoWindow = InfoWindow(f"Прозвонка завершена")
-        self.InfoWindow.Window.show()
+        self.worker = ReadWireWorker(
+            serial_manager=self.serial_manager,
+            command=COMMAND
+        )
 
+        self.worker.progress.connect(self.progress_dialog.set_progress)
+        self.worker.finished.connect(self.on_read_finished)
+        self.worker.error.connect(self.on_read_error)
 
+        self.worker.start()
 
+    def on_read_finished(self):
+        self.progress_dialog.close()
+
+        self.read_bit_rows = self.read_file()
+        self.read_visual(self.read_bit_rows)
+        self.to_test_wire()
+
+        InfoWindow("Прозвонка завершена").Window.show()
+        
+    def on_read_error(self, msg):
+        self.progress_dialog.close()
+        DangerWindow(msg).Window.show()
+
+    
+        
     def test_test(self):
         self.read_bit_rows = self.read_file()
         self.read_visual(self.read_bit_rows)
