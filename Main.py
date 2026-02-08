@@ -161,9 +161,12 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.is_device_connected = False
+
         self.icon = icon()
 
         self.init_ui()
+        self.read_wire_group.read_button.setEnabled(False)
 
         self.load_command_from_ini()
 
@@ -251,6 +254,14 @@ class MainWindow(QMainWindow):
         self.edit_wire_group.process_accord_data(accord_data)
         self.test_wire_group.process_accord_data(accord_data)
 
+    def update_read_controls(self):
+        """Включает / выключает кнопку прозвонки"""
+        is_ready = (
+            self.is_device_connected
+            and self.serial_manager.serial
+            and self.serial_manager.serial.is_open
+        )
+        self.read_wire_group.read_button.setEnabled(is_ready)
 
     # def do_read_wire(self):
     #     self.read_wire_write_file() # прозваниваем провод // записываем в файл 
@@ -260,7 +271,44 @@ class MainWindow(QMainWindow):
 
     #     self.InfoWindow = InfoWindow(f"Прозвонка завершена")
     #     self.InfoWindow.Window.show()
+
+
+    # def do_read_wire(self):
+    #     self.progress_dialog = ReadProgressDialog(self)
+    #     self.progress_dialog.show()
+
+    #     self.worker = ReadWireWorker(
+    #         serial_manager=self.serial_manager,
+    #         command=COMMAND
+    #     )
+
+    #     self.worker.progress.connect(self.progress_dialog.set_progress)
+    #     self.worker.finished.connect(self.on_read_finished)
+    #     self.worker.error.connect(self.on_read_error)
+
+    #     self.worker.start()
+
+    def is_device_alive(self) -> bool:
+        ser = self.serial_manager.serial
+        if not ser or not ser.is_open:
+            return False
+
+        try:
+            ser.write(b'\n')   # любой байт
+            return True
+        except Exception:
+            return False
+            
     def do_read_wire(self):
+        # if not self.is_device_connected:
+        #     WarningWindow("Устройство не подключено").Window.show()
+        #     return
+        if not self.is_device_alive():
+            self.is_device_connected = False
+            self.update_read_controls()
+            WarningWindow("Устройство не подключено").Window.show()
+            return
+
         self.progress_dialog = ReadProgressDialog(self)
         self.progress_dialog.show()
 
@@ -288,8 +336,8 @@ class MainWindow(QMainWindow):
         self.progress_dialog.close()
         DangerWindow(msg).Window.show()
 
-    
-        
+
+
     def test_test(self):
         self.read_bit_rows = self.read_file()
         self.read_visual(self.read_bit_rows)
@@ -355,6 +403,18 @@ class MainWindow(QMainWindow):
                 intersections_text = ""
 
             self.read_wire_group.wires_table.setItem(point_i, 2, QTableWidgetItem(intersections_text))
+
+
+        # запрет на редактирование.
+        for row in range(self.read_wire_group.wires_table.rowCount()):
+            item = self.read_wire_group.wires_table.item(row, 1)
+            if item:
+                # item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # Снимаем флаг редактирования
+                item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+            item = self.read_wire_group.wires_table.item(row, 2)
+            if item:
+                # item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # Снимаем флаг редактирования
+                item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
 
         self.read_wire_group.wires_table.resizeColumnToContents(2)
 
@@ -480,18 +540,40 @@ class MainWindow(QMainWindow):
         ports = self.serial_manager.list_ports()
         self.port_combo.addItems(ports)
 
+    # def connect_device(self):
+    #     port = self.port_combo.currentText()
+    #     if not port:
+    #         return
+    #     try:
+    #         self.serial_manager.connect(port)
+    #         self.statusBar().showMessage(f"Подключено к {port}")
+    #     except Exception as e:
+    #         self.statusBar().showMessage(f"Ошибка подключения: {e}")
+
+    #     time.sleep(2)
+
     def connect_device(self):
         port = self.port_combo.currentText()
         if not port:
             return
         try:
             self.serial_manager.connect(port)
+            self.is_device_connected = True
             self.statusBar().showMessage(f"Подключено к {port}")
         except Exception as e:
+            self.is_device_connected = False
             self.statusBar().showMessage(f"Ошибка подключения: {e}")
 
-        time.sleep(2)
+        # time.sleep(2)
+        self.update_read_controls()
 
+
+    def disconnect_device(self):
+        self.serial_manager.disconnect()
+        self.is_device_connected = False
+        self.update_read_controls()
+
+        
 
     def load_accord_table(self):
         if not self.accord_table_file_name:
@@ -582,6 +664,7 @@ class MainWindow(QMainWindow):
         COMMAND = f"t{t_comand:02d}"  # t01, t05, t12 ...
 
         self.save_command_to_ini()
+        self.read_wire_group.save_accord_file_to_ini()
 
         self.statusBar().showMessage(
             f"Установлена команда {COMMAND}, плат: {t_comand}"

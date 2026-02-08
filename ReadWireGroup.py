@@ -124,22 +124,39 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
 
 
 
+    # def save_accord_file_to_ini(self):
+    #     config = configparser.ConfigParser()
+    #     config.read("settings.ini", encoding="utf-8")
+
+    #     if "COMMAND" not in config:
+    #         config["COMMAND"] = {}
+
+    #     # делаем путь относительным к текущему проекту
+    #     base_dir = os.getcwd()
+    #     relative_path = os.path.relpath(self.accord_table_file_name, base_dir)
+
+    #     config["COMMAND"]["accord_table_file_name"] = relative_path
+
+    #     with open("settings.ini", "w", encoding="utf-8") as f:
+    #         config.write(f)
+
     def save_accord_file_to_ini(self):
+        if not self.accord_table_file_name:
+            return  # ❗ ничего не сохраняем, если файл не выбран
+
+        base_dir = os.getcwd()
+        relative_path = os.path.relpath(self.accord_table_file_name, base_dir)
+
         config = configparser.ConfigParser()
         config.read("settings.ini", encoding="utf-8")
 
         if "COMMAND" not in config:
             config["COMMAND"] = {}
 
-        # делаем путь относительным к текущему проекту
-        base_dir = os.getcwd()
-        relative_path = os.path.relpath(self.accord_table_file_name, base_dir)
-
         config["COMMAND"]["accord_table_file_name"] = relative_path
 
         with open("settings.ini", "w", encoding="utf-8") as f:
             config.write(f)
-
 
     def read_accord_file(self):
         """Чтение файла соответствий из CSV (только первые 2 столбца)"""
@@ -268,6 +285,7 @@ class ReadWireGroup(QWidget):  # QWidget вместо QMainWindow
                 item_pin.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
                 self.wires_table.setItem(row_idx, 1, item_pin)
         
+
         # Автоматически подгоняем ширину столбцов
         self.wires_table.resizeColumnsToContents()
         
